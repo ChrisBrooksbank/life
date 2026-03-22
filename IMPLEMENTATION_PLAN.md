@@ -102,7 +102,7 @@ src/
 - [x] Cell age coloring mode: heat map based on generations alive (spec: rendering.md)
 - [x] WebGPU progressive enhancement with feature detection (spec: rendering.md)
 - [x] Touch support: draw with finger, two-finger pan (spec: ui-controls.md)
-- [ ] PNG screenshot export of current view (spec: pattern-library.md)
+- [x] PNG screenshot export of current view (spec: pattern-library.md)
 - [ ] Animated GIF/WebM export of simulation (spec: pattern-library.md)
 - [ ] Settings panel: theme, grid toggle, colors, key bindings (spec: ui-controls.md)
 - [ ] Keyboard shortcut cheat sheet (press `?`) (spec: ui-controls.md)

@@ -8,6 +8,7 @@ import { PerfMetrics } from './ui/PerfMetrics'
 import { ThemeToggle } from './ui/ThemeToggle'
 import { useFileDrop } from './ui/useFileDrop'
 import { useKeyboardShortcuts } from './ui/useKeyboardShortcuts'
+import { downloadCanvasAsPng } from './patterns/screenshot'
 
 export function App() {
   const [theme, setTheme] = useState(() => appStore.getState().theme)
@@ -65,6 +66,21 @@ export function App() {
           Patterns
         </button>
         <Controls />
+        <button
+          class="app__screenshot-btn"
+          type="button"
+          onClick={() => {
+            const canvas = document.getElementById('life-canvas') as HTMLCanvasElement | null
+            if (canvas) {
+              const gen = appStore.getState().generation
+              downloadCanvasAsPng(canvas, `life-gen-${gen}.png`)
+            }
+          }}
+          aria-label="Export PNG screenshot"
+          title="Export PNG screenshot"
+        >
+          📷
+        </button>
         <ThemeToggle />
       </footer>
     </div>
