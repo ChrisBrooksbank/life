@@ -53,7 +53,7 @@ src/
 - [x] Camera system: zoom, pan, screen↔world coordinate transforms (spec: rendering.md)
 - [x] Mouse wheel zoom + inertial pan + pinch-to-zoom gesture support (spec: rendering.md)
 - [x] Zustand store for global app state (spec: ui-controls.md)
-- [ ] Root App component + responsive layout skeleton (spec: ui-controls.md)
+- [x] Root App component + responsive layout skeleton (spec: ui-controls.md)
 - [ ] Play / Pause / Step controls wired to simulation (spec: ui-controls.md)
 - [ ] Variable speed slider (logarithmic, 1 gen/sec to max) (spec: ui-controls.md)
 - [ ] Generation counter display (spec: ui-controls.md)

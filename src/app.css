@@ -1,0 +1,123 @@
+/* Reset */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body,
+#app {
+  height: 100%;
+  overflow: hidden;
+}
+
+/* ── Root application container ───────────────────────────────────────────── */
+
+.app {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background: #000;
+  font-family: system-ui, -apple-system, sans-serif;
+  color: #fff;
+}
+
+/* ── Canvas (full-bleed, behind all panels) ───────────────────────────────── */
+
+.app__canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* ── Toolbar (drawing tools) ──────────────────────────────────────────────── */
+
+.app__toolbar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 60px; /* leave room for controls bar */
+  width: 48px;
+  background: rgba(18, 18, 18, 0.92);
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 8px 0;
+  gap: 4px;
+  z-index: 10;
+}
+
+/* ── HUD overlay (generation / population) ────────────────────────────────── */
+
+.app__hud {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: rgba(18, 18, 18, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.6;
+  z-index: 10;
+  min-width: 120px;
+}
+
+/* ── Controls bar (playback) ──────────────────────────────────────────────── */
+
+.app__controls {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 60px;
+  background: rgba(18, 18, 18, 0.92);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  gap: 12px;
+  z-index: 10;
+}
+
+/* ── Mobile layout (< 640 px) ─────────────────────────────────────────────── */
+
+@media (max-width: 639px) {
+  .app__toolbar {
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: auto;
+    width: auto;
+    height: 48px;
+    flex-direction: row;
+    border-right: none;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 0 8px;
+  }
+
+  .app__hud {
+    top: 56px; /* sit below the horizontal toolbar */
+    right: 8px;
+  }
+
+  .app__controls {
+    height: 56px;
+    padding: 0 12px;
+    gap: 8px;
+  }
+}
+
+/* ── Visible focus indicators ─────────────────────────────────────────────── */
+
+:focus-visible {
+  outline: 2px solid #4af;
+  outline-offset: 2px;
+}

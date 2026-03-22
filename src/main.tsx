@@ -1,6 +1,7 @@
 import { render } from 'preact'
+import { App } from './app'
 
 const appEl = document.getElementById('app')
 if (appEl) {
-  render(<h1>Game of Life</h1>, appEl)
+  render(<App />, appEl)
 }
