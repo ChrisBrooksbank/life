@@ -1,5 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { WebGL2Renderer, GRID_FADE_START, GRID_FADE_END } from './webgl2-renderer'
+import {
+  WebGL2Renderer,
+  GRID_FADE_START,
+  GRID_FADE_END,
+  HEATMAP_ZOOM_THRESHOLD,
+  HEATMAP_MAX_TEXTURE_SIZE,
+} from './webgl2-renderer'
 import type { Camera, RendererOptions } from './webgl2-renderer'
 
 // ---------------------------------------------------------------------------
@@ -14,6 +20,8 @@ function createMockGL(canvasWidth = 800, canvasHeight = 600) {
     u_cellColor: { _name: 'u_cellColor' },
     u_gridColor: { _name: 'u_gridColor' },
     u_gridAlpha: { _name: 'u_gridAlpha' },
+    u_heatmap: { _name: 'u_heatmap' },
+    u_bgColor: { _name: 'u_bgColor' },
   }
 
   return {
@@ -34,6 +42,16 @@ function createMockGL(canvasWidth = 800, canvasHeight = 600) {
     BLEND: 3042,
     SRC_ALPHA: 770,
     ONE_MINUS_SRC_ALPHA: 771,
+    TEXTURE_2D: 3553,
+    TEXTURE0: 33984,
+    TEXTURE_MIN_FILTER: 10241,
+    TEXTURE_MAG_FILTER: 10240,
+    TEXTURE_WRAP_S: 10242,
+    TEXTURE_WRAP_T: 10243,
+    LINEAR: 9729,
+    CLAMP_TO_EDGE: 33071,
+    RED: 6403,
+    R32F: 33326,
 
     // Shader / program
     createShader: vi.fn(() => ({})),
@@ -75,6 +93,7 @@ function createMockGL(canvasWidth = 800, canvasHeight = 600) {
     getUniformLocation: vi.fn((_prog: unknown, name: string) => uniformLocations[name] ?? null),
     uniform2f: vi.fn(),
     uniform1f: vi.fn(),
+    uniform1i: vi.fn(),
     uniform4fv: vi.fn(),
 
     // Draw
@@ -88,6 +107,15 @@ function createMockGL(canvasWidth = 800, canvasHeight = 600) {
     enable: vi.fn(),
     disable: vi.fn(),
     blendFunc: vi.fn(),
+
+    // Textures
+    createTexture: vi.fn(() => ({})),
+    deleteTexture: vi.fn(),
+    bindTexture: vi.fn(),
+    activeTexture: vi.fn(),
+    texImage2D: vi.fn(),
+    texSubImage2D: vi.fn(),
+    texParameteri: vi.fn(),
   }
 }
 
@@ -129,12 +157,12 @@ describe('WebGL2Renderer', () => {
     expect(() => new WebGL2Renderer(badCanvas)).toThrow('WebGL2 is not supported')
   })
 
-  it('creates two VAOs during construction (cell + grid)', () => {
-    expect(gl.createVertexArray).toHaveBeenCalledTimes(2)
+  it('creates three VAOs during construction (cell + grid + heatmap)', () => {
+    expect(gl.createVertexArray).toHaveBeenCalledTimes(3)
   })
 
-  it('creates three buffers during construction (quad + instance + grid quad)', () => {
-    expect(gl.createBuffer).toHaveBeenCalledTimes(3)
+  it('creates four buffers during construction (quad + instance + grid quad + heatmap quad)', () => {
+    expect(gl.createBuffer).toHaveBeenCalledTimes(4)
   })
 
   it('marks a_cellPos as instanced (divisor 1)', () => {
@@ -246,19 +274,19 @@ describe('WebGL2Renderer', () => {
 
   // --- dispose() ---
 
-  it('dispose() deletes both programs', () => {
+  it('dispose() deletes all three programs', () => {
     renderer.dispose()
-    expect(gl.deleteProgram).toHaveBeenCalledTimes(2)
+    expect(gl.deleteProgram).toHaveBeenCalledTimes(3)
   })
 
-  it('dispose() deletes all three buffers', () => {
+  it('dispose() deletes all four buffers', () => {
     renderer.dispose()
-    expect(gl.deleteBuffer).toHaveBeenCalledTimes(3)
+    expect(gl.deleteBuffer).toHaveBeenCalledTimes(4)
   })
 
-  it('dispose() deletes both VAOs', () => {
+  it('dispose() deletes all three VAOs', () => {
     renderer.dispose()
-    expect(gl.deleteVertexArray).toHaveBeenCalledTimes(2)
+    expect(gl.deleteVertexArray).toHaveBeenCalledTimes(3)
   })
 
   // --- Grid overlay ---
@@ -359,5 +387,90 @@ describe('WebGL2Renderer', () => {
   it('gridAlpha is linear between fade bounds', () => {
     const quarter = GRID_FADE_START + (GRID_FADE_END - GRID_FADE_START) * 0.25
     expect(WebGL2Renderer.gridAlpha(quarter)).toBeCloseTo(0.25)
+  })
+
+  // --- Multi-scale rendering: heatmap mode ---
+
+  it('HEATMAP_ZOOM_THRESHOLD is a positive number less than GRID_FADE_START', () => {
+    expect(HEATMAP_ZOOM_THRESHOLD).toBeGreaterThan(0)
+    expect(HEATMAP_ZOOM_THRESHOLD).toBeLessThan(GRID_FADE_START)
+  })
+
+  it('HEATMAP_MAX_TEXTURE_SIZE is a positive integer', () => {
+    expect(HEATMAP_MAX_TEXTURE_SIZE).toBeGreaterThan(0)
+    expect(Number.isInteger(HEATMAP_MAX_TEXTURE_SIZE)).toBe(true)
+  })
+
+  it('does NOT call drawArraysInstanced when zoom < HEATMAP_ZOOM_THRESHOLD', () => {
+    renderer.render([{ x: 0, y: 0 }], { x: 0, y: 0, zoom: HEATMAP_ZOOM_THRESHOLD - 0.5 })
+    expect(gl.drawArraysInstanced).not.toHaveBeenCalled()
+  })
+
+  it('calls drawArraysInstanced when zoom >= HEATMAP_ZOOM_THRESHOLD', () => {
+    renderer.render([{ x: 0, y: 0 }], { x: 0, y: 0, zoom: HEATMAP_ZOOM_THRESHOLD })
+    expect(gl.drawArraysInstanced).toHaveBeenCalledWith(gl.TRIANGLE_STRIP, 0, 4, 1)
+  })
+
+  it('calls drawArrays (heatmap fullscreen quad) when zoom < HEATMAP_ZOOM_THRESHOLD and cells exist', () => {
+    renderer.render([{ x: 0, y: 0 }], { x: 0, y: 0, zoom: HEATMAP_ZOOM_THRESHOLD - 0.5 })
+    expect(gl.drawArrays).toHaveBeenCalledWith(gl.TRIANGLE_STRIP, 0, 4)
+  })
+
+  it('skips heatmap draw when zoom < HEATMAP_ZOOM_THRESHOLD but no cells', () => {
+    renderer.render([], { x: 0, y: 0, zoom: HEATMAP_ZOOM_THRESHOLD - 0.5 })
+    expect(gl.drawArrays).not.toHaveBeenCalled()
+    expect(gl.drawArraysInstanced).not.toHaveBeenCalled()
+  })
+
+  it('creates a texture on first heatmap render', () => {
+    renderer.render([{ x: 0, y: 0 }], { x: 0, y: 0, zoom: HEATMAP_ZOOM_THRESHOLD - 0.5 })
+    expect(gl.createTexture).toHaveBeenCalledTimes(1)
+    expect(gl.texImage2D).toHaveBeenCalledTimes(1)
+  })
+
+  it('reuses existing texture on subsequent heatmap renders with same canvas size', () => {
+    const cam: Camera = { x: 0, y: 0, zoom: HEATMAP_ZOOM_THRESHOLD - 0.5 }
+    renderer.render([{ x: 0, y: 0 }], cam)
+    renderer.render([{ x: 0, y: 0 }], cam)
+    // texImage2D allocates; texSubImage2D updates — second call should use texSubImage2D
+    expect(gl.createTexture).toHaveBeenCalledTimes(1)
+    expect(gl.texImage2D).toHaveBeenCalledTimes(1)
+    expect(gl.texSubImage2D).toHaveBeenCalledTimes(1)
+  })
+
+  it('sets u_bgColor uniform during heatmap render', () => {
+    renderer.setColors({ backgroundColor: [0.1, 0.2, 0.3, 1] })
+    renderer.render([{ x: 0, y: 0 }], { x: 0, y: 0, zoom: HEATMAP_ZOOM_THRESHOLD - 0.5 })
+    const calls = gl.uniform4fv.mock.calls
+    const bgCall = calls.find(([loc]) => (loc as Record<string, string>)._name === 'u_bgColor')
+    expect(bgCall).toBeDefined()
+    expect(bgCall![1]).toEqual([0.1, 0.2, 0.3, 1])
+  })
+
+  it('sets u_cellColor uniform during heatmap render', () => {
+    renderer.setColors({ cellColor: [1, 0, 0, 1] })
+    renderer.render([{ x: 0, y: 0 }], { x: 0, y: 0, zoom: HEATMAP_ZOOM_THRESHOLD - 0.5 })
+    const calls = gl.uniform4fv.mock.calls
+    const colorCall = calls.find(([loc]) => (loc as Record<string, string>)._name === 'u_cellColor')
+    expect(colorCall).toBeDefined()
+    expect(colorCall![1]).toEqual([1, 0, 0, 1])
+  })
+
+  it('disposes heatmap texture when created', () => {
+    renderer.render([{ x: 0, y: 0 }], { x: 0, y: 0, zoom: HEATMAP_ZOOM_THRESHOLD - 0.5 })
+    renderer.dispose()
+    expect(gl.deleteTexture).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not draw grid overlay in heatmap mode', () => {
+    renderer.setGrid(true)
+    renderer.render([{ x: 0, y: 0 }], { x: 0, y: 0, zoom: HEATMAP_ZOOM_THRESHOLD - 0.5 })
+    // drawArrays is called once for heatmap, not for the grid
+    // verify grid-specific uniform (u_gridAlpha) was never set
+    const calls = gl.uniform1f.mock.calls
+    const gridAlphaCall = calls.find(
+      ([loc]) => (loc as Record<string, string>)._name === 'u_gridAlpha',
+    )
+    expect(gridAlphaCall).toBeUndefined()
   })
 })

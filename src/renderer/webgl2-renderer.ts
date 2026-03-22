@@ -30,6 +30,20 @@ export const GRID_FADE_START = 4
 export const GRID_FADE_END = 8
 
 // ---------------------------------------------------------------------------
+// Multi-scale rendering thresholds (pixels per cell)
+// ---------------------------------------------------------------------------
+
+/**
+ * Below this zoom level, render a density heatmap instead of individual cells.
+ * At 2 px/cell cells are sub-pixel on many displays, so heatmap gives more
+ * visual information about population density.
+ */
+export const HEATMAP_ZOOM_THRESHOLD = 2
+
+/** Maximum heatmap texture dimension in either axis */
+export const HEATMAP_MAX_TEXTURE_SIZE = 256
+
+// ---------------------------------------------------------------------------
 // GLSL sources — cell rendering
 // ---------------------------------------------------------------------------
 
@@ -101,6 +115,36 @@ void main() {
   } else {
     discard;
   }
+}
+`
+
+// ---------------------------------------------------------------------------
+// GLSL sources — heatmap overlay
+// ---------------------------------------------------------------------------
+
+const HEATMAP_VERTEX_SHADER_SOURCE = `#version 300 es
+in vec2 a_position;
+
+void main() {
+  gl_Position = vec4(a_position, 0.0, 1.0);
+}
+`
+
+const HEATMAP_FRAGMENT_SHADER_SOURCE = `#version 300 es
+precision mediump float;
+
+uniform vec2 u_resolution;
+uniform sampler2D u_heatmap;
+uniform vec4 u_cellColor;
+uniform vec4 u_bgColor;
+
+out vec4 outColor;
+
+void main() {
+  // Convert fragment coords (bottom-left origin) to UV with top-left origin
+  vec2 uv = vec2(gl_FragCoord.x, u_resolution.y - gl_FragCoord.y) / u_resolution;
+  float density = texture(u_heatmap, uv).r;
+  outColor = mix(u_bgColor, u_cellColor, density);
 }
 `
 
@@ -197,6 +241,19 @@ export class WebGL2Renderer {
   private gridColor: [number, number, number, number]
   private showGrid: boolean
 
+  // Heatmap rendering
+  private readonly heatmapProgram: WebGLProgram
+  private readonly heatmapVao: WebGLVertexArrayObject
+  private readonly heatmapQuadBuffer: WebGLBuffer
+  private heatmapTexture: WebGLTexture | null = null
+  private heatmapTexWidth = 0
+  private heatmapTexHeight = 0
+
+  private readonly uHeatmapResolution: WebGLUniformLocation
+  private readonly uHeatmapTex: WebGLUniformLocation
+  private readonly uHeatmapCellColor: WebGLUniformLocation
+  private readonly uHeatmapBgColor: WebGLUniformLocation
+
   constructor(canvas: HTMLCanvasElement, options: RendererOptions = {}) {
     this.cellColor = options.cellColor ?? [1, 1, 1, 1]
     this.backgroundColor = options.backgroundColor ?? [0, 0, 0, 1]
@@ -287,6 +344,44 @@ export class WebGL2Renderer {
     this.uGridZoom = uGridZoom
     this.uGridColor = uGridColor
     this.uGridAlpha = uGridAlpha
+
+    // ---- Heatmap program ----
+    this.heatmapProgram = createProgram(
+      gl,
+      HEATMAP_VERTEX_SHADER_SOURCE,
+      HEATMAP_FRAGMENT_SHADER_SOURCE,
+    )
+
+    const heatmapVao = gl.createVertexArray()
+    if (!heatmapVao) throw new Error('Failed to create heatmap VAO')
+    this.heatmapVao = heatmapVao
+    gl.bindVertexArray(heatmapVao)
+
+    const heatmapQuadBuffer = gl.createBuffer()
+    if (!heatmapQuadBuffer) throw new Error('Failed to create heatmap quad buffer')
+    this.heatmapQuadBuffer = heatmapQuadBuffer
+    gl.bindBuffer(gl.ARRAY_BUFFER, heatmapQuadBuffer)
+    gl.bufferData(gl.ARRAY_BUFFER, GRID_QUAD_VERTICES, gl.STATIC_DRAW)
+
+    const heatmapPosLoc = gl.getAttribLocation(this.heatmapProgram, 'a_position')
+    gl.enableVertexAttribArray(heatmapPosLoc)
+    gl.vertexAttribPointer(heatmapPosLoc, 2, gl.FLOAT, false, 0, 0)
+
+    gl.bindVertexArray(null)
+
+    const uHeatmapResolution = gl.getUniformLocation(this.heatmapProgram, 'u_resolution')
+    const uHeatmapTex = gl.getUniformLocation(this.heatmapProgram, 'u_heatmap')
+    const uHeatmapCellColor = gl.getUniformLocation(this.heatmapProgram, 'u_cellColor')
+    const uHeatmapBgColor = gl.getUniformLocation(this.heatmapProgram, 'u_bgColor')
+
+    if (!uHeatmapResolution || !uHeatmapTex || !uHeatmapCellColor || !uHeatmapBgColor) {
+      throw new Error('Failed to get one or more heatmap uniform locations')
+    }
+
+    this.uHeatmapResolution = uHeatmapResolution
+    this.uHeatmapTex = uHeatmapTex
+    this.uHeatmapCellColor = uHeatmapCellColor
+    this.uHeatmapBgColor = uHeatmapBgColor
   }
 
   /** Update cell and/or background and/or grid colors. Takes effect on next render(). */
@@ -320,69 +415,157 @@ export class WebGL2Renderer {
   render(cells: Cell[], camera: Camera): void {
     const gl = this.gl
     const count = cells.length
-
-    // Grow instance buffer if necessary
-    if (count > this.instanceCapacity) {
-      this.instanceCapacity = Math.max(count, this.instanceCapacity * 2)
-      gl.bindBuffer(gl.ARRAY_BUFFER, this.instanceBuffer)
-      gl.bufferData(gl.ARRAY_BUFFER, this.instanceCapacity * 2 * 4, gl.DYNAMIC_DRAW)
-    }
-
-    // Upload cell positions
-    if (count > 0) {
-      const data = new Float32Array(count * 2)
-      for (let i = 0; i < count; i++) {
-        const cell = cells[i]!
-        data[i * 2] = cell.x
-        data[i * 2 + 1] = cell.y
-      }
-      gl.bindBuffer(gl.ARRAY_BUFFER, this.instanceBuffer)
-      gl.bufferSubData(gl.ARRAY_BUFFER, 0, data)
-    }
+    const canvas = gl.canvas as HTMLCanvasElement
 
     // Viewport + clear
-    const canvas = gl.canvas as HTMLCanvasElement
     gl.viewport(0, 0, canvas.width, canvas.height)
     const [br, bg, bb, ba] = this.backgroundColor
     gl.clearColor(br, bg, bb, ba)
     gl.clear(gl.COLOR_BUFFER_BIT)
 
-    // Draw cells
-    if (count > 0) {
-      gl.useProgram(this.program)
-      gl.bindVertexArray(this.vao)
+    if (camera.zoom < HEATMAP_ZOOM_THRESHOLD) {
+      // Heatmap mode: density visualization for zoomed-out views
+      if (count > 0) {
+        this.renderHeatmap(cells, camera)
+      }
+    } else {
+      // Individual cell mode: instanced quad rendering
 
-      gl.uniform2f(this.uResolution, canvas.width, canvas.height)
-      gl.uniform2f(this.uCamera, camera.x, camera.y)
-      gl.uniform1f(this.uZoom, camera.zoom)
-      gl.uniform4fv(this.uCellColor, this.cellColor)
+      // Grow instance buffer if necessary
+      if (count > this.instanceCapacity) {
+        this.instanceCapacity = Math.max(count, this.instanceCapacity * 2)
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.instanceBuffer)
+        gl.bufferData(gl.ARRAY_BUFFER, this.instanceCapacity * 2 * 4, gl.DYNAMIC_DRAW)
+      }
 
-      gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, count)
-      gl.bindVertexArray(null)
-    }
+      // Upload cell positions
+      if (count > 0) {
+        const data = new Float32Array(count * 2)
+        for (let i = 0; i < count; i++) {
+          const cell = cells[i]!
+          data[i * 2] = cell.x
+          data[i * 2 + 1] = cell.y
+        }
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.instanceBuffer)
+        gl.bufferSubData(gl.ARRAY_BUFFER, 0, data)
+      }
 
-    // Draw grid overlay
-    if (this.showGrid) {
-      const alpha = WebGL2Renderer.gridAlpha(camera.zoom)
-      if (alpha > 0) {
-        gl.enable(gl.BLEND)
-        gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
+      // Draw cells
+      if (count > 0) {
+        gl.useProgram(this.program)
+        gl.bindVertexArray(this.vao)
 
-        gl.useProgram(this.gridProgram)
-        gl.bindVertexArray(this.gridVao)
+        gl.uniform2f(this.uResolution, canvas.width, canvas.height)
+        gl.uniform2f(this.uCamera, camera.x, camera.y)
+        gl.uniform1f(this.uZoom, camera.zoom)
+        gl.uniform4fv(this.uCellColor, this.cellColor)
 
-        gl.uniform2f(this.uGridResolution, canvas.width, canvas.height)
-        gl.uniform2f(this.uGridCamera, camera.x, camera.y)
-        gl.uniform1f(this.uGridZoom, camera.zoom)
-        gl.uniform4fv(this.uGridColor, this.gridColor)
-        gl.uniform1f(this.uGridAlpha, alpha)
-
-        gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4)
+        gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, count)
         gl.bindVertexArray(null)
+      }
 
-        gl.disable(gl.BLEND)
+      // Draw grid overlay (only in individual-cell mode where grid is meaningful)
+      if (this.showGrid) {
+        const alpha = WebGL2Renderer.gridAlpha(camera.zoom)
+        if (alpha > 0) {
+          gl.enable(gl.BLEND)
+          gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
+
+          gl.useProgram(this.gridProgram)
+          gl.bindVertexArray(this.gridVao)
+
+          gl.uniform2f(this.uGridResolution, canvas.width, canvas.height)
+          gl.uniform2f(this.uGridCamera, camera.x, camera.y)
+          gl.uniform1f(this.uGridZoom, camera.zoom)
+          gl.uniform4fv(this.uGridColor, this.gridColor)
+          gl.uniform1f(this.uGridAlpha, alpha)
+
+          gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4)
+          gl.bindVertexArray(null)
+
+          gl.disable(gl.BLEND)
+        }
       }
     }
+  }
+
+  /**
+   * Render a density heatmap for zoomed-out views.
+   *
+   * Bins live cells into a low-resolution texture grid covering the visible
+   * world area. Each texel stores a normalised density value [0, 1].
+   * A full-screen quad samples the texture and linearly interpolates between
+   * background and cell color based on density.
+   */
+  private renderHeatmap(cells: Cell[], camera: Camera): void {
+    const gl = this.gl
+    const canvas = gl.canvas as HTMLCanvasElement
+
+    // Choose texture dimensions (cap at HEATMAP_MAX_TEXTURE_SIZE)
+    const texW = Math.min(HEATMAP_MAX_TEXTURE_SIZE, canvas.width)
+    const texH = Math.min(HEATMAP_MAX_TEXTURE_SIZE, canvas.height)
+
+    // Visible world region
+    const worldW = canvas.width / camera.zoom
+    const worldH = canvas.height / camera.zoom
+    const worldLeft = camera.x
+    const worldTop = camera.y
+    const cellWorldW = worldW / texW
+    const cellWorldH = worldH / texH
+
+    // Accumulate density counts per texel
+    const density = new Float32Array(texW * texH)
+    for (const cell of cells) {
+      const tx = Math.floor((cell.x - worldLeft) / cellWorldW)
+      const ty = Math.floor((cell.y - worldTop) / cellWorldH)
+      if (tx >= 0 && tx < texW && ty >= 0 && ty < texH) {
+        const idx = ty * texW + tx
+        density[idx] = (density[idx] ?? 0) + 1
+      }
+    }
+
+    // Normalise to [0, 1]
+    let maxDensity = 1
+    for (let i = 0; i < density.length; i++) {
+      if (density[i]! > maxDensity) maxDensity = density[i]!
+    }
+    for (let i = 0; i < density.length; i++) {
+      density[i] = density[i]! / maxDensity
+    }
+
+    // Upload density data to a R32F texture
+    const TEXTURE_UNIT = 0
+    gl.activeTexture(gl.TEXTURE0 + TEXTURE_UNIT)
+
+    if (!this.heatmapTexture || this.heatmapTexWidth !== texW || this.heatmapTexHeight !== texH) {
+      if (this.heatmapTexture) gl.deleteTexture(this.heatmapTexture)
+      const tex = gl.createTexture()
+      if (!tex) throw new Error('Failed to create heatmap texture')
+      this.heatmapTexture = tex
+      this.heatmapTexWidth = texW
+      this.heatmapTexHeight = texH
+      gl.bindTexture(gl.TEXTURE_2D, tex)
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.R32F, texW, texH, 0, gl.RED, gl.FLOAT, density)
+    } else {
+      gl.bindTexture(gl.TEXTURE_2D, this.heatmapTexture)
+      gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, texW, texH, gl.RED, gl.FLOAT, density)
+    }
+
+    // Render fullscreen quad sampling from the heatmap texture
+    gl.useProgram(this.heatmapProgram)
+    gl.bindVertexArray(this.heatmapVao)
+
+    gl.uniform2f(this.uHeatmapResolution, canvas.width, canvas.height)
+    gl.uniform1i(this.uHeatmapTex, TEXTURE_UNIT)
+    gl.uniform4fv(this.uHeatmapCellColor, this.cellColor)
+    gl.uniform4fv(this.uHeatmapBgColor, this.backgroundColor)
+
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4)
+    gl.bindVertexArray(null)
   }
 
   /** Release all GPU resources. */
@@ -395,5 +578,12 @@ export class WebGL2Renderer {
     gl.deleteProgram(this.gridProgram)
     gl.deleteBuffer(this.gridQuadBuffer)
     gl.deleteVertexArray(this.gridVao)
+    gl.deleteProgram(this.heatmapProgram)
+    gl.deleteBuffer(this.heatmapQuadBuffer)
+    gl.deleteVertexArray(this.heatmapVao)
+    if (this.heatmapTexture) {
+      gl.deleteTexture(this.heatmapTexture)
+      this.heatmapTexture = null
+    }
   }
 }
