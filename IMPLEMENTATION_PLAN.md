@@ -73,7 +73,7 @@ src/
 - [x] Toolbar for drawing tool selection (spec: ui-controls.md)
 - [x] Keyboard shortcuts for all major actions (spec: ui-controls.md)
 - [x] Line drawing tool (spec: editor.md)
-- [ ] Rectangle drawing tool (filled or outline) (spec: editor.md)
+- [x] Rectangle drawing tool (filled or outline) (spec: editor.md)
 - [ ] Circle/ellipse drawing tool (filled or outline) (spec: editor.md)
 - [ ] Fill tool (flood fill for enclosed regions) (spec: editor.md)
 - [ ] Undo/redo stack: Ctrl+Z / Ctrl+Shift+Z for all editor operations (spec: editor.md)
