@@ -2,6 +2,7 @@ import type { Camera } from '../renderer/webgl2-renderer'
 import type { Cell } from '../engine/types'
 import type { DrawingTool } from '../store'
 import { screenToWorld } from '../renderer/camera'
+import { transformCells, type TransformType } from './transform'
 
 export interface SelectionRect {
   minX: number
@@ -34,6 +35,11 @@ export interface SelectionToolHandler {
   copySelection: () => Cell[] | null
   /** Copy then delete the selected cells. */
   cutSelection: () => void
+  /**
+   * Rotate or flip the live cells inside the current selection in-place.
+   * Does nothing when there is no active selection.
+   */
+  transformSelection: (type: TransformType) => void
 }
 
 // ---------------------------------------------------------------------------
@@ -343,6 +349,38 @@ export function createSelectionTool(
     })
   }
 
+  function transformSelection(type: TransformType): void {
+    if (selection === null) return
+    const currentRect = selection
+
+    getCells().then((cells) => {
+      onBeforeChange?.(cells)
+      const allKeys = new Set(cells.map((c) => cellKey(c.x, c.y)))
+      const { inside, outside } = partitionByRect(allKeys, currentRect)
+
+      const insideCells: Cell[] = []
+      for (const key of inside) {
+        insideCells.push(parseKey(key))
+      }
+
+      const { cells: transformed, newSelection } = transformCells(insideCells, currentRect, type)
+
+      const result: Cell[] = []
+      for (const key of outside) {
+        result.push(parseKey(key))
+      }
+      for (const c of transformed) {
+        result.push(c)
+      }
+      setCells(result)
+
+      // Update selection and refresh cached inside set
+      setSelection(newSelection)
+      const newAllKeys = new Set(result.map((c) => cellKey(c.x, c.y)))
+      cachedInside = partitionByRect(newAllKeys, newSelection).inside
+    })
+  }
+
   return {
     dispose() {
       canvas.removeEventListener('mousedown', onMouseDown)
@@ -357,5 +395,6 @@ export function createSelectionTool(
     deleteSelection,
     copySelection,
     cutSelection,
+    transformSelection,
   }
 }
