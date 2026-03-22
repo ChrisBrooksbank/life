@@ -82,7 +82,7 @@ src/
 - [x] Transform: rotate 90/180/270°, flip horizontal/vertical (spec: editor.md)
 - [x] Copy/paste with clipboard support in RLE format (spec: editor.md)
 - [x] Smart paste: live preview follows cursor, places on click (spec: editor.md)
-- [ ] RLE format parser (import) (spec: pattern-library.md)
+- [x] RLE format parser (import) (spec: pattern-library.md)
 - [ ] Plaintext (.cells) format parser (import) (spec: pattern-library.md)
 - [ ] Life 1.06 (.lif) format parser (import) (spec: pattern-library.md)
 - [ ] RLE format exporter (spec: pattern-library.md)
