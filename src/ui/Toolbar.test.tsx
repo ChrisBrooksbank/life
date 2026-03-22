@@ -53,7 +53,7 @@ describe('Toolbar — rendering', () => {
 
   it('renders a button for each tool', () => {
     const buttons = container.querySelectorAll('button')
-    expect(buttons.length).toBe(2)
+    expect(buttons.length).toBe(3)
   })
 
   it('renders pencil button', () => {
@@ -63,6 +63,11 @@ describe('Toolbar — rendering', () => {
 
   it('renders eraser button', () => {
     const btn = container.querySelector('[aria-label="Eraser — remove cells"]')
+    expect(btn).not.toBeNull()
+  })
+
+  it('renders line button', () => {
+    const btn = container.querySelector('[aria-label="Line — draw straight lines"]')
     expect(btn).not.toBeNull()
   })
 })

@@ -11,6 +11,7 @@ interface ToolConfig {
 const TOOLS: ToolConfig[] = [
   { id: 'pencil', label: '✏', title: 'Pencil — draw cells' },
   { id: 'eraser', label: '⌫', title: 'Eraser — remove cells' },
+  { id: 'line', label: '╱', title: 'Line — draw straight lines' },
 ]
 
 /** Toolbar for selecting the active drawing tool. */
