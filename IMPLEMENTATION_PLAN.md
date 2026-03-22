@@ -66,7 +66,7 @@ src/
 - [x] HashLife engine: memoized quadtree with O(log n) generation steps (spec: simulation-engine.md)
 - [x] Engine runtime switching: naive for editing, HashLife for fast-forward (spec: simulation-engine.md)
 - [x] Toggleable grid overlay with zoom-based fade (spec: rendering.md)
-- [ ] Dark and light themes with customizable cell/background/grid colors (spec: rendering.md)
+- [x] Dark and light themes with customizable cell/background/grid colors (spec: rendering.md)
 - [ ] HUD overlay: generation, population, birth/death rate (spec: ui-controls.md)
 - [ ] Performance metrics display: gen/sec, render FPS, memory usage (spec: ui-controls.md)
 - [ ] Population sparkline graph over time (spec: ui-controls.md)

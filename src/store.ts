@@ -2,6 +2,8 @@ import { createStore } from 'zustand/vanilla'
 import { DEFAULT_RULES } from './engine/types'
 import type { Rules } from './engine/types'
 import type { WorkerClient } from './engine/worker-client'
+import { THEME_COLORS } from './renderer/themes'
+import type { Theme, ThemeColors } from './renderer/themes'
 
 export type DrawingTool = 'pencil' | 'eraser'
 
@@ -16,6 +18,10 @@ export interface AppState {
 
   // Editor state
   activeTool: DrawingTool
+
+  // Theme
+  theme: Theme
+  themeColors: ThemeColors
 
   /**
    * Reference to the simulation worker client.
@@ -34,6 +40,10 @@ export interface AppState {
   setSpeed: (speed: number) => void
   setActiveTool: (tool: DrawingTool) => void
   setRules: (rules: Rules) => void
+  /** Switch to a preset theme (resets any custom color overrides). */
+  setTheme: (theme: Theme) => void
+  /** Override individual renderer colors without changing the theme preset. */
+  setThemeColors: (colors: Partial<ThemeColors>) => void
   /** Called by the worker's onState callback to sync generation/population. */
   updateSimState: (generation: number, population: number) => void
 }
@@ -48,6 +58,10 @@ export const appStore = createStore<AppState>()((set, get) => ({
 
   // Initial editor state
   activeTool: 'pencil',
+
+  // Initial theme
+  theme: 'dark',
+  themeColors: THEME_COLORS.dark,
 
   worker: null,
 
@@ -89,6 +103,14 @@ export const appStore = createStore<AppState>()((set, get) => ({
     const { worker } = get()
     worker?.setRules(rules)
     set({ rules })
+  },
+
+  setTheme: (theme) => {
+    set({ theme, themeColors: THEME_COLORS[theme] })
+  },
+
+  setThemeColors: (colors) => {
+    set((state) => ({ themeColors: { ...state.themeColors, ...colors } }))
   },
 
   updateSimState: (generation, population) => {

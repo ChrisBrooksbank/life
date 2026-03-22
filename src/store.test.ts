@@ -3,6 +3,7 @@ import { appStore } from './store'
 import type { AppState } from './store'
 import { DEFAULT_RULES } from './engine/types'
 import type { StateCallback } from './engine/worker-client'
+import { DARK_THEME_COLORS, LIGHT_THEME_COLORS } from './renderer/themes'
 
 function getStore(): AppState {
   return appStore.getState()
@@ -16,6 +17,8 @@ function resetStore() {
     speed: 10,
     rules: DEFAULT_RULES,
     activeTool: 'pencil',
+    theme: 'dark',
+    themeColors: DARK_THEME_COLORS,
     worker: null,
   })
 }
@@ -141,6 +144,47 @@ describe('appStore — setRules', () => {
     const newRules = { birth: [3, 6], survival: [2, 3, 6] }
     getStore().setRules(newRules)
     expect(mockWorker.setRules).toHaveBeenCalledWith(newRules)
+  })
+})
+
+describe('appStore — theme', () => {
+  beforeEach(resetStore)
+
+  it('defaults to dark theme', () => {
+    expect(getStore().theme).toBe('dark')
+  })
+
+  it('defaults themeColors to dark preset', () => {
+    expect(getStore().themeColors).toEqual(DARK_THEME_COLORS)
+  })
+
+  it('setTheme("light") switches theme and colors', () => {
+    getStore().setTheme('light')
+    const s = getStore()
+    expect(s.theme).toBe('light')
+    expect(s.themeColors).toEqual(LIGHT_THEME_COLORS)
+  })
+
+  it('setTheme("dark") restores dark theme colors', () => {
+    getStore().setTheme('light')
+    getStore().setTheme('dark')
+    const s = getStore()
+    expect(s.theme).toBe('dark')
+    expect(s.themeColors).toEqual(DARK_THEME_COLORS)
+  })
+
+  it('setThemeColors() overrides individual color fields', () => {
+    const customCell: [number, number, number, number] = [1, 0, 0, 1]
+    getStore().setThemeColors({ cellColor: customCell })
+    expect(getStore().themeColors.cellColor).toEqual(customCell)
+    // Other fields remain unchanged
+    expect(getStore().themeColors.backgroundColor).toEqual(DARK_THEME_COLORS.backgroundColor)
+  })
+
+  it('setTheme() after setThemeColors() resets to preset colors', () => {
+    getStore().setThemeColors({ cellColor: [0.5, 0.5, 0.5, 1] })
+    getStore().setTheme('light')
+    expect(getStore().themeColors).toEqual(LIGHT_THEME_COLORS)
   })
 })
 
