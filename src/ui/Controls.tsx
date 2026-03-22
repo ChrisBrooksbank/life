@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'preact/hooks'
 import { appStore } from '../store'
+import { GenerationJumpInput } from './GenerationJumpInput'
 
 /** Minimum and maximum simulation speed in generations per second. */
 export const MIN_SPEED = 1
@@ -101,6 +102,7 @@ export function Controls() {
         />
         <span class="controls__speed-value">{speed} gen/s</span>
       </label>
+      <GenerationJumpInput />
     </div>
   )
 }

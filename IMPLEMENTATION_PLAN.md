@@ -97,7 +97,7 @@ src/
 ### Phase 3 — Polish
 
 - [x] Rewind / time travel via snapshot history (spec: ui-controls.md)
-- [ ] Generation jump input: type number, leap via HashLife (spec: ui-controls.md)
+- [x] Generation jump input: type number, leap via HashLife (spec: ui-controls.md)
 - [ ] Multi-scale rendering: density heatmaps at low zoom, individual cells at high zoom (spec: rendering.md)
 - [ ] Cell age coloring mode: heat map based on generations alive (spec: rendering.md)
 - [ ] WebGPU progressive enhancement with feature detection (spec: rendering.md)

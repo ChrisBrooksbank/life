@@ -108,6 +108,12 @@ export interface AppState {
    * Pauses the simulation.
    */
   rewindTo: (index: number) => void
+  /**
+   * Leap forward to the given target generation using HashLife.
+   * Switches the engine to HashLife, steps by (target - currentGeneration),
+   * then pauses. No-op if target <= current generation or worker is unavailable.
+   */
+  jumpToGeneration: (target: number) => void
 
   // Internal: allows overriding which cells are copied (e.g. selection)
   _clipboardCopySource: (() => Cell[] | null) | null
@@ -243,6 +249,16 @@ export const appStore = createStore<AppState>()((set, get) => ({
       snapshots: _snapshotHistory.snapshots.slice(),
       canRewind: _snapshotHistory.canRewind,
     })
+  },
+
+  jumpToGeneration: (target: number) => {
+    const { worker, generation } = get()
+    if (!worker) return
+    const delta = target - generation
+    if (delta <= 0) return
+    set({ isRunning: false })
+    worker.setEngine('hashlife')
+    worker.step(delta)
   },
 
   _clipboardCopySource: null,
