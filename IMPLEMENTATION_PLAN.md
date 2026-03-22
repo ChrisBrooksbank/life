@@ -9,6 +9,7 @@
 ## Notes
 
 ### Architecture (from plan.md)
+
 - **Language:** TypeScript (strict mode)
 - **Build:** Vite
 - **Rendering:** WebGL2 (WebGPU progressive enhancement)
@@ -17,6 +18,7 @@
 - **Testing:** Vitest + Playwright
 
 ### Project Structure
+
 ```
 src/
 ├── engine/            # Naive + HashLife engines, types, Web Worker
@@ -29,6 +31,7 @@ src/
 ```
 
 ### Key Constraints
+
 - Simulation must run off main thread (Web Worker)
 - HashLife must be validated against naive engine for correctness
 - 60fps target for up to 1M visible cells
@@ -42,7 +45,7 @@ src/
 ### Phase 1 — Core MVP
 
 - [x] Project setup: Vite + TypeScript strict + Preact + Vitest + Playwright (spec: plan.md)
-- [ ] Engine shared types and interfaces: Cell, Coordinate, Pattern, EngineInterface (spec: simulation-engine.md)
+- [x] Engine shared types and interfaces: Cell, Coordinate, Pattern, EngineInterface (spec: simulation-engine.md)
 - [ ] Naive simulation engine (Set<string> storage, B3/S23, unbounded grid) (spec: simulation-engine.md)
 - [ ] Configurable rules via Birth/Survival strings (default B3/S23) (spec: simulation-engine.md)
 - [ ] Web Worker wrapper: off-main-thread simulation with message protocol (spec: simulation-engine.md)
