@@ -63,7 +63,7 @@ src/
 
 ### Phase 2 — Power Features
 
-- [ ] HashLife engine: memoized quadtree with O(log n) generation steps (spec: simulation-engine.md)
+- [x] HashLife engine: memoized quadtree with O(log n) generation steps (spec: simulation-engine.md)
 - [ ] Engine runtime switching: naive for editing, HashLife for fast-forward (spec: simulation-engine.md)
 - [ ] Toggleable grid overlay with zoom-based fade (spec: rendering.md)
 - [ ] Dark and light themes with customizable cell/background/grid colors (spec: rendering.md)
