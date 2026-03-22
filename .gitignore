@@ -2,3 +2,8 @@ node_modules/
 dist/
 coverage/
 *.local
+
+# Playwright
+test-results/
+playwright-report/
+blob-report/
