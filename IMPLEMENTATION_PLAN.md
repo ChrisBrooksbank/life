@@ -78,7 +78,7 @@ src/
 - [x] Fill tool (flood fill for enclosed regions) (spec: editor.md)
 - [x] Undo/redo stack: Ctrl+Z / Ctrl+Shift+Z for all editor operations (spec: editor.md)
 - [x] Rectangular selection: move, copy, cut, delete (spec: editor.md)
-- [ ] Freeform lasso selection (spec: editor.md)
+- [x] Freeform lasso selection (spec: editor.md)
 - [ ] Transform: rotate 90/180/270°, flip horizontal/vertical (spec: editor.md)
 - [ ] Copy/paste with clipboard support in RLE format (spec: editor.md)
 - [ ] Smart paste: live preview follows cursor, places on click (spec: editor.md)
