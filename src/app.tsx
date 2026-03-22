@@ -3,6 +3,7 @@ import './app.css'
 import { appStore } from './store'
 import { Controls } from './ui/Controls'
 import { HUD } from './ui/HUD'
+import { PerfMetrics } from './ui/PerfMetrics'
 import { ThemeToggle } from './ui/ThemeToggle'
 
 export function App() {
@@ -30,6 +31,8 @@ export function App() {
       {/* HUD overlay — real-time stats */}
       <aside class="app__hud" aria-label="Simulation statistics" aria-live="polite">
         <HUD />
+        <hr class="hud__divider" />
+        <PerfMetrics />
       </aside>
 
       {/* Playback controls bar */}

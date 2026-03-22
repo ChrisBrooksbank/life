@@ -270,6 +270,12 @@ body,
   color: #f44336;
 }
 
+.hud__divider {
+  border: none;
+  border-top: 1px solid var(--color-border);
+  margin: 6px 0;
+}
+
 /* ── Visible focus indicators ─────────────────────────────────────────────── */
 
 :focus-visible {
