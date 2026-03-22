@@ -276,6 +276,227 @@ body,
   margin: 6px 0;
 }
 
+/* ── Pattern library sidebar ──────────────────────────────────────────────── */
+
+.app__pattern-library-toggle {
+  height: 36px;
+  padding: 0 14px;
+  background: var(--color-btn-bg);
+  border: 1px solid var(--color-btn-border);
+  border-radius: 4px;
+  color: var(--color-text);
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+  transition:
+    background 120ms,
+    border-color 120ms;
+}
+
+.app__pattern-library-toggle:hover {
+  background: var(--color-btn-bg-hover);
+  border-color: var(--color-btn-border-hover);
+}
+
+.app__pattern-library-toggle[aria-pressed='true'] {
+  background: var(--color-btn-active-bg);
+  border-color: var(--color-btn-active-border);
+}
+
+.pattern-library {
+  position: absolute;
+  top: 0;
+  left: 48px; /* sit beside the toolbar */
+  bottom: 60px;
+  width: 280px;
+  background: var(--color-panel-bg);
+  border-right: 1px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+  z-index: 20;
+  overflow: hidden;
+}
+
+.pattern-library__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px 8px;
+  border-bottom: 1px solid var(--color-border);
+  flex-shrink: 0;
+}
+
+.pattern-library__title {
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.pattern-library__close {
+  width: 28px;
+  height: 28px;
+  background: none;
+  border: none;
+  color: var(--color-text);
+  cursor: pointer;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  opacity: 0.7;
+  transition: opacity 120ms;
+}
+
+.pattern-library__close:hover {
+  opacity: 1;
+  background: var(--color-btn-bg-hover);
+}
+
+.pattern-library__search {
+  margin: 8px;
+  padding: 6px 10px;
+  background: var(--color-btn-bg);
+  border: 1px solid var(--color-btn-border);
+  border-radius: 4px;
+  color: var(--color-text);
+  font-size: 13px;
+  font-family: inherit;
+  outline: none;
+  flex-shrink: 0;
+}
+
+.pattern-library__search:focus {
+  border-color: var(--color-accent);
+}
+
+.pattern-library__search::placeholder {
+  color: var(--color-speed-value);
+}
+
+.pattern-library__filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 0 8px 8px;
+  flex-shrink: 0;
+}
+
+.pattern-library__filter {
+  padding: 3px 8px;
+  background: var(--color-btn-bg);
+  border: 1px solid var(--color-btn-border);
+  border-radius: 12px;
+  color: var(--color-text);
+  font-size: 11px;
+  font-family: inherit;
+  cursor: pointer;
+  transition:
+    background 120ms,
+    border-color 120ms;
+  white-space: nowrap;
+}
+
+.pattern-library__filter:hover {
+  background: var(--color-btn-bg-hover);
+  border-color: var(--color-btn-border-hover);
+}
+
+.pattern-library__filter--active {
+  background: var(--color-btn-active-bg);
+  border-color: var(--color-btn-active-border);
+  color: var(--color-accent);
+}
+
+.pattern-library__count {
+  padding: 2px 12px 6px;
+  font-size: 11px;
+  color: var(--color-speed-value);
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.pattern-library__list {
+  flex: 1;
+  overflow-y: auto;
+  list-style: none;
+  padding: 4px 0;
+}
+
+.pattern-library__item {
+  border-bottom: 1px solid var(--color-border);
+}
+
+.pattern-library__item:last-child {
+  border-bottom: none;
+}
+
+.pattern-library__item-btn {
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  padding: 8px 12px;
+  cursor: pointer;
+  color: var(--color-text);
+  font-family: inherit;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  transition: background 100ms;
+}
+
+.pattern-library__item-btn:hover {
+  background: var(--color-btn-bg-hover);
+}
+
+.pattern-library__item-name {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.pattern-library__item-meta {
+  display: flex;
+  gap: 8px;
+  font-size: 10px;
+  color: var(--color-speed-value);
+  flex-wrap: wrap;
+}
+
+.pattern-library__item-category {
+  color: var(--color-accent);
+  font-weight: 500;
+}
+
+.pattern-library__item-desc {
+  font-size: 11px;
+  color: var(--color-speed-value);
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.pattern-library__empty {
+  padding: 24px 16px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--color-speed-value);
+}
+
+/* On mobile, pattern library takes full width */
+@media (max-width: 639px) {
+  .pattern-library {
+    left: 0;
+    top: 48px; /* below horizontal toolbar */
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid var(--color-border);
+    bottom: 56px;
+  }
+}
+
 /* ── Visible focus indicators ─────────────────────────────────────────────── */
 
 :focus-visible {

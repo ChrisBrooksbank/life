@@ -3,12 +3,14 @@ import './app.css'
 import { appStore } from './store'
 import { Controls } from './ui/Controls'
 import { HUD } from './ui/HUD'
+import { PatternLibrary } from './ui/PatternLibrary'
 import { PerfMetrics } from './ui/PerfMetrics'
 import { ThemeToggle } from './ui/ThemeToggle'
 import { useKeyboardShortcuts } from './ui/useKeyboardShortcuts'
 
 export function App() {
   const [theme, setTheme] = useState(() => appStore.getState().theme)
+  const [libraryOpen, setLibraryOpen] = useState(false)
 
   useKeyboardShortcuts()
 
@@ -31,6 +33,9 @@ export function App() {
         {/* Tool buttons added in later tasks */}
       </nav>
 
+      {/* Pattern library sidebar */}
+      {libraryOpen && <PatternLibrary onClose={() => setLibraryOpen(false)} />}
+
       {/* HUD overlay — real-time stats */}
       <aside class="app__hud" aria-label="Simulation statistics" aria-live="polite">
         <HUD />
@@ -40,6 +45,16 @@ export function App() {
 
       {/* Playback controls bar */}
       <footer class="app__controls" aria-label="Simulation controls">
+        <button
+          class="app__pattern-library-toggle"
+          type="button"
+          onClick={() => setLibraryOpen((o) => !o)}
+          aria-pressed={libraryOpen}
+          aria-label={libraryOpen ? 'Close pattern library' : 'Open pattern library'}
+          title="Pattern library"
+        >
+          Patterns
+        </button>
         <Controls />
         <ThemeToggle />
       </footer>
