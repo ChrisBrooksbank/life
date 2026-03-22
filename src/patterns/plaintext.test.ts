@@ -1,10 +1,86 @@
 import { describe, it, expect } from 'vitest'
-import { decodePlaintext } from './plaintext'
+import { decodePlaintext, encodePlaintext } from './plaintext'
 import type { Cell } from '../engine/types'
 
 function cellSet(cells: Cell[]): string[] {
   return cells.map((c) => `${c.x},${c.y}`).sort()
 }
+
+describe('encodePlaintext', () => {
+  it('returns empty string for empty cells', () => {
+    expect(encodePlaintext([])).toBe('')
+  })
+
+  it('encodes a single live cell', () => {
+    expect(encodePlaintext([{ x: 0, y: 0 }])).toBe('O')
+  })
+
+  it('encodes a horizontal blinker', () => {
+    const cells: Cell[] = [
+      { x: 0, y: 0 },
+      { x: 1, y: 0 },
+      { x: 2, y: 0 },
+    ]
+    expect(encodePlaintext(cells)).toBe('OOO')
+  })
+
+  it('encodes a vertical blinker', () => {
+    const cells: Cell[] = [
+      { x: 0, y: 0 },
+      { x: 0, y: 1 },
+      { x: 0, y: 2 },
+    ]
+    expect(encodePlaintext(cells)).toBe('O\nO\nO')
+  })
+
+  it('encodes a 2x2 block', () => {
+    const cells: Cell[] = [
+      { x: 0, y: 0 },
+      { x: 1, y: 0 },
+      { x: 0, y: 1 },
+      { x: 1, y: 1 },
+    ]
+    expect(encodePlaintext(cells)).toBe('OO\nOO')
+  })
+
+  it('encodes a glider', () => {
+    // .O.
+    // ..O
+    // OOO
+    const cells: Cell[] = [
+      { x: 1, y: 0 },
+      { x: 2, y: 1 },
+      { x: 0, y: 2 },
+      { x: 1, y: 2 },
+      { x: 2, y: 2 },
+    ]
+    expect(encodePlaintext(cells)).toBe('.O\n..O\nOOO')
+  })
+
+  it('normalises coordinates to origin', () => {
+    const cells: Cell[] = [
+      { x: 10, y: 5 },
+      { x: 11, y: 5 },
+    ]
+    expect(encodePlaintext(cells)).toBe('OO')
+  })
+
+  it('strips trailing dead cells from each row', () => {
+    // Only left cell in a 3-wide grid
+    const cells: Cell[] = [
+      { x: 0, y: 0 },
+      { x: 0, y: 1 },
+    ]
+    const result = encodePlaintext(cells)
+    expect(result).toBe('O\nO')
+  })
+
+  it('round-trips through decode/encode', () => {
+    const original = '.O.\n..O\nOOO'
+    const cells = decodePlaintext(original)
+    expect(encodePlaintext(cells)).toBe('.O\n..O\nOOO')
+  })
+})
 
 describe('decodePlaintext', () => {
   it('returns empty array for empty string', () => {
