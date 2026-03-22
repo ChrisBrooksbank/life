@@ -41,7 +41,7 @@ src/
 
 ### Phase 1 — Core MVP
 
-- [ ] Project setup: Vite + TypeScript strict + Preact + Vitest + Playwright (spec: plan.md)
+- [x] Project setup: Vite + TypeScript strict + Preact + Vitest + Playwright (spec: plan.md)
 - [ ] Engine shared types and interfaces: Cell, Coordinate, Pattern, EngineInterface (spec: simulation-engine.md)
 - [ ] Naive simulation engine (Set<string> storage, B3/S23, unbounded grid) (spec: simulation-engine.md)
 - [ ] Configurable rules via Birth/Survival strings (default B3/S23) (spec: simulation-engine.md)
