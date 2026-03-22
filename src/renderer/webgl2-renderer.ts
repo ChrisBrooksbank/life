@@ -18,6 +18,8 @@ export interface RendererOptions {
   gridColor?: [number, number, number, number]
   /** Whether to show the grid overlay, default false */
   showGrid?: boolean
+  /** Whether to color cells by age (heat map), default false */
+  ageColorMode?: boolean
 }
 
 // ---------------------------------------------------------------------------
@@ -44,7 +46,7 @@ export const HEATMAP_ZOOM_THRESHOLD = 2
 export const HEATMAP_MAX_TEXTURE_SIZE = 256
 
 // ---------------------------------------------------------------------------
-// GLSL sources — cell rendering
+// GLSL sources — cell rendering (uniform color)
 // ---------------------------------------------------------------------------
 
 const VERTEX_SHADER_SOURCE = `#version 300 es
@@ -71,6 +73,50 @@ out vec4 outColor;
 
 void main() {
   outColor = u_cellColor;
+}
+`
+
+// ---------------------------------------------------------------------------
+// GLSL sources — cell rendering (age heat-map coloring)
+// ---------------------------------------------------------------------------
+
+const AGE_VERTEX_SHADER_SOURCE = `#version 300 es
+in vec2 a_position;
+in vec2 a_cellPos;
+in float a_age;
+
+uniform vec2 u_resolution;
+uniform vec2 u_camera;
+uniform float u_zoom;
+
+out float v_age;
+
+void main() {
+  vec2 worldPos = a_cellPos + a_position;
+  vec2 screenPos = (worldPos - u_camera) * u_zoom;
+  vec2 ndcPos = screenPos / u_resolution * 2.0 - 1.0;
+  gl_Position = vec4(ndcPos.x, -ndcPos.y, 0.0, 1.0);
+  v_age = a_age;
+}
+`
+
+const AGE_FRAGMENT_SHADER_SOURCE = `#version 300 es
+precision mediump float;
+
+in float v_age;
+out vec4 outColor;
+
+// 5-stop rainbow heatmap: blue -> cyan -> green -> yellow -> red
+vec3 ageHeatmap(float t) {
+  t = clamp(t, 0.0, 1.0);
+  if (t < 0.25) return mix(vec3(0.0, 0.0, 1.0), vec3(0.0, 1.0, 1.0), t * 4.0);
+  if (t < 0.5)  return mix(vec3(0.0, 1.0, 1.0), vec3(0.0, 1.0, 0.0), (t - 0.25) * 4.0);
+  if (t < 0.75) return mix(vec3(0.0, 1.0, 0.0), vec3(1.0, 1.0, 0.0), (t - 0.5)  * 4.0);
+  return mix(vec3(1.0, 1.0, 0.0), vec3(1.0, 0.0, 0.0), (t - 0.75) * 4.0);
+}
+
+void main() {
+  outColor = vec4(ageHeatmap(v_age), 1.0);
 }
 `
 
@@ -208,11 +254,14 @@ const INITIAL_CAPACITY = 65536 // cells
  *
  * An optional grid overlay is rendered as a full-screen procedural pass that
  * fades in between GRID_FADE_START and GRID_FADE_END pixels-per-cell.
+ *
+ * Age color mode colors each cell by how many generations it has been alive,
+ * using a blue→cyan→green→yellow→red heat map.
  */
 export class WebGL2Renderer {
   private readonly gl: WebGL2RenderingContext
 
-  // Cell rendering
+  // Cell rendering (uniform color)
   private readonly program: WebGLProgram
   private readonly vao: WebGLVertexArrayObject
   private readonly quadBuffer: WebGLBuffer
@@ -226,6 +275,17 @@ export class WebGL2Renderer {
 
   private cellColor: [number, number, number, number]
   private backgroundColor: [number, number, number, number]
+
+  // Cell rendering (age heat-map color)
+  private readonly ageProgram: WebGLProgram
+  private readonly ageVao: WebGLVertexArrayObject
+  private ageInstanceBuffer: WebGLBuffer
+
+  private readonly uAgeResolution: WebGLUniformLocation
+  private readonly uAgeCamera: WebGLUniformLocation
+  private readonly uAgeZoom: WebGLUniformLocation
+
+  private ageColorMode: boolean
 
   // Grid overlay
   private readonly gridProgram: WebGLProgram
@@ -259,12 +319,13 @@ export class WebGL2Renderer {
     this.backgroundColor = options.backgroundColor ?? [0, 0, 0, 1]
     this.gridColor = options.gridColor ?? [0.3, 0.3, 0.3, 1]
     this.showGrid = options.showGrid ?? false
+    this.ageColorMode = options.ageColorMode ?? false
 
     const gl = canvas.getContext('webgl2')
     if (!gl) throw new Error('WebGL2 is not supported')
     this.gl = gl
 
-    // ---- Cell program ----
+    // ---- Cell program (uniform color) ----
     this.program = createProgram(gl, VERTEX_SHADER_SOURCE, FRAGMENT_SHADER_SOURCE)
 
     const vao = gl.createVertexArray()
@@ -308,6 +369,53 @@ export class WebGL2Renderer {
     this.uCamera = uCamera
     this.uZoom = uZoom
     this.uCellColor = uCellColor
+
+    // ---- Cell program (age heat-map color) ----
+    this.ageProgram = createProgram(gl, AGE_VERTEX_SHADER_SOURCE, AGE_FRAGMENT_SHADER_SOURCE)
+
+    const ageVao = gl.createVertexArray()
+    if (!ageVao) throw new Error('Failed to create age VAO')
+    this.ageVao = ageVao
+    gl.bindVertexArray(ageVao)
+
+    // Reuse quadBuffer for a_position
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.quadBuffer)
+    const agePosLoc = gl.getAttribLocation(this.ageProgram, 'a_position')
+    gl.enableVertexAttribArray(agePosLoc)
+    gl.vertexAttribPointer(agePosLoc, 2, gl.FLOAT, false, 0, 0)
+
+    // Reuse instanceBuffer for a_cellPos
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.instanceBuffer)
+    const ageCellPosLoc = gl.getAttribLocation(this.ageProgram, 'a_cellPos')
+    gl.enableVertexAttribArray(ageCellPosLoc)
+    gl.vertexAttribPointer(ageCellPosLoc, 2, gl.FLOAT, false, 0, 0)
+    gl.vertexAttribDivisor(ageCellPosLoc, 1)
+
+    // New per-instance age buffer (one float per cell)
+    const ageInstanceBuffer = gl.createBuffer()
+    if (!ageInstanceBuffer) throw new Error('Failed to create age instance buffer')
+    this.ageInstanceBuffer = ageInstanceBuffer
+    gl.bindBuffer(gl.ARRAY_BUFFER, ageInstanceBuffer)
+    gl.bufferData(gl.ARRAY_BUFFER, this.instanceCapacity * 4, gl.DYNAMIC_DRAW)
+
+    const ageAttrLoc = gl.getAttribLocation(this.ageProgram, 'a_age')
+    gl.enableVertexAttribArray(ageAttrLoc)
+    gl.vertexAttribPointer(ageAttrLoc, 1, gl.FLOAT, false, 0, 0)
+    gl.vertexAttribDivisor(ageAttrLoc, 1)
+
+    gl.bindVertexArray(null)
+
+    const uAgeResolution = gl.getUniformLocation(this.ageProgram, 'u_resolution')
+    const uAgeCamera = gl.getUniformLocation(this.ageProgram, 'u_camera')
+    const uAgeZoom = gl.getUniformLocation(this.ageProgram, 'u_zoom')
+
+    if (!uAgeResolution || !uAgeCamera || !uAgeZoom) {
+      throw new Error('Failed to get one or more age uniform locations')
+    }
+
+    this.uAgeResolution = uAgeResolution
+    this.uAgeCamera = uAgeCamera
+    this.uAgeZoom = uAgeZoom
 
     // ---- Grid program ----
     this.gridProgram = createProgram(gl, GRID_VERTEX_SHADER_SOURCE, GRID_FRAGMENT_SHADER_SOURCE)
@@ -397,6 +505,15 @@ export class WebGL2Renderer {
   }
 
   /**
+   * Enable or disable age-based heat-map cell coloring.
+   * When enabled, cells are colored blue→cyan→green→yellow→red based on how
+   * many consecutive generations they have been alive.
+   */
+  setAgeColorMode(enabled: boolean): void {
+    this.ageColorMode = enabled
+  }
+
+  /**
    * Compute the grid fade alpha for a given zoom level.
    * Returns 0 below GRID_FADE_START, 1 above GRID_FADE_END, linear between.
    */
@@ -409,7 +526,7 @@ export class WebGL2Renderer {
   /**
    * Render a frame.
    *
-   * @param cells  Live cells in world coordinates.
+   * @param cells  Live cells in world coordinates (may include `age` for heat-map mode).
    * @param camera Camera describing the visible region.
    */
   render(cells: Cell[], camera: Camera): void {
@@ -431,37 +548,21 @@ export class WebGL2Renderer {
     } else {
       // Individual cell mode: instanced quad rendering
 
-      // Grow instance buffer if necessary
+      // Grow instance buffers if necessary
       if (count > this.instanceCapacity) {
         this.instanceCapacity = Math.max(count, this.instanceCapacity * 2)
         gl.bindBuffer(gl.ARRAY_BUFFER, this.instanceBuffer)
         gl.bufferData(gl.ARRAY_BUFFER, this.instanceCapacity * 2 * 4, gl.DYNAMIC_DRAW)
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.ageInstanceBuffer)
+        gl.bufferData(gl.ARRAY_BUFFER, this.instanceCapacity * 4, gl.DYNAMIC_DRAW)
       }
 
-      // Upload cell positions
       if (count > 0) {
-        const data = new Float32Array(count * 2)
-        for (let i = 0; i < count; i++) {
-          const cell = cells[i]!
-          data[i * 2] = cell.x
-          data[i * 2 + 1] = cell.y
+        if (this.ageColorMode) {
+          this.renderCellsWithAge(cells, camera, count)
+        } else {
+          this.renderCells(cells, camera, count)
         }
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.instanceBuffer)
-        gl.bufferSubData(gl.ARRAY_BUFFER, 0, data)
-      }
-
-      // Draw cells
-      if (count > 0) {
-        gl.useProgram(this.program)
-        gl.bindVertexArray(this.vao)
-
-        gl.uniform2f(this.uResolution, canvas.width, canvas.height)
-        gl.uniform2f(this.uCamera, camera.x, camera.y)
-        gl.uniform1f(this.uZoom, camera.zoom)
-        gl.uniform4fv(this.uCellColor, this.cellColor)
-
-        gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, count)
-        gl.bindVertexArray(null)
       }
 
       // Draw grid overlay (only in individual-cell mode where grid is meaningful)
@@ -487,6 +588,83 @@ export class WebGL2Renderer {
         }
       }
     }
+  }
+
+  /** Render cells with uniform color. */
+  private renderCells(cells: Cell[], camera: Camera, count: number): void {
+    const gl = this.gl
+    const canvas = gl.canvas as HTMLCanvasElement
+
+    // Upload cell positions
+    const data = new Float32Array(count * 2)
+    for (let i = 0; i < count; i++) {
+      const cell = cells[i]!
+      data[i * 2] = cell.x
+      data[i * 2 + 1] = cell.y
+    }
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.instanceBuffer)
+    gl.bufferSubData(gl.ARRAY_BUFFER, 0, data)
+
+    // Draw cells
+    gl.useProgram(this.program)
+    gl.bindVertexArray(this.vao)
+
+    gl.uniform2f(this.uResolution, canvas.width, canvas.height)
+    gl.uniform2f(this.uCamera, camera.x, camera.y)
+    gl.uniform1f(this.uZoom, camera.zoom)
+    gl.uniform4fv(this.uCellColor, this.cellColor)
+
+    gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, count)
+    gl.bindVertexArray(null)
+  }
+
+  /**
+   * Render cells colored by age using the heat-map shader.
+   * Ages are normalised to [0, 1] relative to the oldest live cell.
+   */
+  private renderCellsWithAge(cells: Cell[], camera: Camera, count: number): void {
+    const gl = this.gl
+    const canvas = gl.canvas as HTMLCanvasElement
+
+    // Build position and age arrays; find max age for normalisation
+    const posData = new Float32Array(count * 2)
+    const ageData = new Float32Array(count)
+    let maxAge = 0
+
+    for (let i = 0; i < count; i++) {
+      const cell = cells[i]!
+      posData[i * 2] = cell.x
+      posData[i * 2 + 1] = cell.y
+      const age = cell.age ?? 0
+      ageData[i] = age
+      if (age > maxAge) maxAge = age
+    }
+
+    // Normalise ages to [0, 1]
+    if (maxAge > 0) {
+      for (let i = 0; i < count; i++) {
+        ageData[i] = ageData[i]! / maxAge
+      }
+    }
+
+    // Upload positions
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.instanceBuffer)
+    gl.bufferSubData(gl.ARRAY_BUFFER, 0, posData)
+
+    // Upload normalised ages
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.ageInstanceBuffer)
+    gl.bufferSubData(gl.ARRAY_BUFFER, 0, ageData)
+
+    // Draw with age program
+    gl.useProgram(this.ageProgram)
+    gl.bindVertexArray(this.ageVao)
+
+    gl.uniform2f(this.uAgeResolution, canvas.width, canvas.height)
+    gl.uniform2f(this.uAgeCamera, camera.x, camera.y)
+    gl.uniform1f(this.uAgeZoom, camera.zoom)
+
+    gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, count)
+    gl.bindVertexArray(null)
   }
 
   /**
@@ -575,6 +753,9 @@ export class WebGL2Renderer {
     gl.deleteBuffer(this.quadBuffer)
     gl.deleteBuffer(this.instanceBuffer)
     gl.deleteVertexArray(this.vao)
+    gl.deleteProgram(this.ageProgram)
+    gl.deleteBuffer(this.ageInstanceBuffer)
+    gl.deleteVertexArray(this.ageVao)
     gl.deleteProgram(this.gridProgram)
     gl.deleteBuffer(this.gridQuadBuffer)
     gl.deleteVertexArray(this.gridVao)

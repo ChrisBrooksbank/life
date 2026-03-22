@@ -1,6 +1,8 @@
 export interface Cell {
   x: number
   y: number
+  /** How many consecutive generations this cell has been alive (0 = born this step). */
+  age?: number
 }
 
 export type Coordinate = Cell

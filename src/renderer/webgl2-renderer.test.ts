@@ -22,6 +22,7 @@ function createMockGL(canvasWidth = 800, canvasHeight = 600) {
     u_gridAlpha: { _name: 'u_gridAlpha' },
     u_heatmap: { _name: 'u_heatmap' },
     u_bgColor: { _name: 'u_bgColor' },
+    u_maxAge: { _name: 'u_maxAge' },
   }
 
   return {
@@ -82,7 +83,7 @@ function createMockGL(canvasWidth = 800, canvasHeight = 600) {
 
     // Attributes
     getAttribLocation: vi.fn((_prog: unknown, name: string) => {
-      const map: Record<string, number> = { a_position: 0, a_cellPos: 1 }
+      const map: Record<string, number> = { a_position: 0, a_cellPos: 1, a_age: 2 }
       return map[name] ?? -1
     }),
     enableVertexAttribArray: vi.fn(),
@@ -157,12 +158,12 @@ describe('WebGL2Renderer', () => {
     expect(() => new WebGL2Renderer(badCanvas)).toThrow('WebGL2 is not supported')
   })
 
-  it('creates three VAOs during construction (cell + grid + heatmap)', () => {
-    expect(gl.createVertexArray).toHaveBeenCalledTimes(3)
+  it('creates four VAOs during construction (cell + age + grid + heatmap)', () => {
+    expect(gl.createVertexArray).toHaveBeenCalledTimes(4)
   })
 
-  it('creates four buffers during construction (quad + instance + grid quad + heatmap quad)', () => {
-    expect(gl.createBuffer).toHaveBeenCalledTimes(4)
+  it('creates five buffers during construction (quad + instance + age-instance + grid quad + heatmap quad)', () => {
+    expect(gl.createBuffer).toHaveBeenCalledTimes(5)
   })
 
   it('marks a_cellPos as instanced (divisor 1)', () => {
@@ -274,19 +275,19 @@ describe('WebGL2Renderer', () => {
 
   // --- dispose() ---
 
-  it('dispose() deletes all three programs', () => {
+  it('dispose() deletes all four programs', () => {
     renderer.dispose()
-    expect(gl.deleteProgram).toHaveBeenCalledTimes(3)
+    expect(gl.deleteProgram).toHaveBeenCalledTimes(4)
   })
 
-  it('dispose() deletes all four buffers', () => {
+  it('dispose() deletes all five buffers', () => {
     renderer.dispose()
-    expect(gl.deleteBuffer).toHaveBeenCalledTimes(4)
+    expect(gl.deleteBuffer).toHaveBeenCalledTimes(5)
   })
 
-  it('dispose() deletes all three VAOs', () => {
+  it('dispose() deletes all four VAOs', () => {
     renderer.dispose()
-    expect(gl.deleteVertexArray).toHaveBeenCalledTimes(3)
+    expect(gl.deleteVertexArray).toHaveBeenCalledTimes(4)
   })
 
   // --- Grid overlay ---
@@ -472,5 +473,86 @@ describe('WebGL2Renderer', () => {
       ([loc]) => (loc as Record<string, string>)._name === 'u_gridAlpha',
     )
     expect(gridAlphaCall).toBeUndefined()
+  })
+
+  // --- Age color mode ---
+
+  it('setAgeColorMode(true) switches to age-heat-map rendering', () => {
+    renderer.setAgeColorMode(true)
+    renderer.render([{ x: 0, y: 0, age: 0 }], { x: 0, y: 0, zoom: 16 })
+    // Should still call drawArraysInstanced for one cell
+    expect(gl.drawArraysInstanced).toHaveBeenCalledWith(gl.TRIANGLE_STRIP, 0, 4, 1)
+  })
+
+  it('age color mode uploads age buffer data', () => {
+    renderer.setAgeColorMode(true)
+    renderer.render(
+      [
+        { x: 0, y: 0, age: 0 },
+        { x: 1, y: 0, age: 10 },
+      ],
+      { x: 0, y: 0, zoom: 16 },
+    )
+    // bufferSubData should be called twice: once for positions, once for ages
+    expect(gl.bufferSubData).toHaveBeenCalledTimes(2)
+  })
+
+  it('age color mode accepted via constructor options', () => {
+    const r = new WebGL2Renderer(canvas, { ageColorMode: true })
+    r.render([{ x: 0, y: 0, age: 5 }], { x: 0, y: 0, zoom: 16 })
+    expect(gl.drawArraysInstanced).toHaveBeenCalledWith(gl.TRIANGLE_STRIP, 0, 4, 1)
+  })
+
+  it('setAgeColorMode(false) reverts to uniform-color rendering', () => {
+    renderer.setAgeColorMode(true)
+    renderer.setAgeColorMode(false)
+    renderer.render([{ x: 0, y: 0, age: 5 }], { x: 0, y: 0, zoom: 16 })
+    // In normal mode, only one bufferSubData call (positions only)
+    expect(gl.bufferSubData).toHaveBeenCalledTimes(1)
+    // And u_cellColor should be set
+    expect(gl.uniform4fv).toHaveBeenCalledWith(expect.anything(), [1, 1, 1, 1])
+  })
+
+  it('age color mode: cells without age field default to age 0', () => {
+    renderer.setAgeColorMode(true)
+    // Cell has no age property
+    renderer.render([{ x: 0, y: 0 }], { x: 0, y: 0, zoom: 16 })
+    expect(gl.drawArraysInstanced).toHaveBeenCalledWith(gl.TRIANGLE_STRIP, 0, 4, 1)
+  })
+
+  it('age color mode: normalises ages so max age maps to 1.0', () => {
+    renderer.setAgeColorMode(true)
+    renderer.render(
+      [
+        { x: 0, y: 0, age: 0 },
+        { x: 1, y: 0, age: 50 },
+        { x: 2, y: 0, age: 100 },
+      ],
+      { x: 0, y: 0, zoom: 16 },
+    )
+    // Second bufferSubData call carries the normalised age floats
+    const ageCalls = gl.bufferSubData.mock.calls
+    const ageCall = ageCalls[1] as [unknown, unknown, Float32Array]
+    expect(ageCall).toBeDefined()
+    const ageData = ageCall[2]
+    expect(ageData[0]).toBeCloseTo(0)
+    expect(ageData[1]).toBeCloseTo(0.5)
+    expect(ageData[2]).toBeCloseTo(1.0)
+  })
+
+  it('age color mode: all-zero ages results in all-zero normalised values', () => {
+    renderer.setAgeColorMode(true)
+    renderer.render(
+      [
+        { x: 0, y: 0, age: 0 },
+        { x: 1, y: 0, age: 0 },
+      ],
+      { x: 0, y: 0, zoom: 16 },
+    )
+    const ageCalls = gl.bufferSubData.mock.calls
+    const ageCall = ageCalls[1] as [unknown, unknown, Float32Array]
+    const ageData = ageCall[2]
+    expect(ageData[0]).toBe(0)
+    expect(ageData[1]).toBe(0)
   })
 })

@@ -6,6 +6,11 @@ function sortCells(cells: Cell[]): Cell[] {
   return [...cells].sort((a, b) => a.x - b.x || a.y - b.y)
 }
 
+/** Strip `age` for position-only comparisons (age tracking is separate concern). */
+function positions(cells: Cell[]): { x: number; y: number }[] {
+  return sortCells(cells).map(({ x, y }) => ({ x, y }))
+}
+
 describe('NaiveEngine', () => {
   let engine: NaiveEngine
 
@@ -35,7 +40,7 @@ describe('NaiveEngine', () => {
         { x: -3, y: -4 },
       ]
       engine.setCells(cells)
-      expect(sortCells(engine.getCells())).toEqual(sortCells(cells))
+      expect(positions(engine.getCells())).toEqual(positions(cells))
     })
 
     it('updates population', () => {
@@ -75,8 +80,8 @@ describe('NaiveEngine', () => {
         { x: 1, y: 1 },
       ])
       engine.step()
-      expect(sortCells(engine.getCells())).toEqual(
-        sortCells([
+      expect(positions(engine.getCells())).toEqual(
+        positions([
           { x: 0, y: 0 },
           { x: 1, y: 0 },
           { x: 0, y: 1 },
@@ -95,8 +100,8 @@ describe('NaiveEngine', () => {
 
       // After 1 step: vertical blinker
       engine.step()
-      expect(sortCells(engine.getCells())).toEqual(
-        sortCells([
+      expect(positions(engine.getCells())).toEqual(
+        positions([
           { x: 1, y: 0 },
           { x: 1, y: 1 },
           { x: 1, y: 2 },
@@ -105,8 +110,8 @@ describe('NaiveEngine', () => {
 
       // After 2 steps: back to horizontal
       engine.step()
-      expect(sortCells(engine.getCells())).toEqual(
-        sortCells([
+      expect(positions(engine.getCells())).toEqual(
+        positions([
           { x: 0, y: 1 },
           { x: 1, y: 1 },
           { x: 2, y: 1 },
@@ -125,8 +130,8 @@ describe('NaiveEngine', () => {
       ])
       engine.step(4)
       // Glider moves +1x, +1y per 4 steps (diagonal)
-      expect(sortCells(engine.getCells())).toEqual(
-        sortCells([
+      expect(positions(engine.getCells())).toEqual(
+        positions([
           { x: 2, y: 1 },
           { x: 3, y: 2 },
           { x: 1, y: 3 },
@@ -165,7 +170,7 @@ describe('NaiveEngine', () => {
       engineB.setCells(cells)
       engineB.step(3)
 
-      expect(sortCells(engineA.getCells())).toEqual(sortCells(engineB.getCells()))
+      expect(positions(engineA.getCells())).toEqual(positions(engineB.getCells()))
     })
   })
 
@@ -200,6 +205,75 @@ describe('NaiveEngine', () => {
       const cells = engine.getCells()
       // At least the original cells survive and some neighbors are born
       expect(cells.length).toBeGreaterThan(2)
+    })
+  })
+
+  describe('cell age tracking', () => {
+    it('getCells returns age 0 for freshly set cells', () => {
+      engine.setCells([
+        { x: 0, y: 0 },
+        { x: 1, y: 1 },
+      ])
+      const cells = engine.getCells()
+      expect(cells.every((c) => c.age === 0)).toBe(true)
+    })
+
+    it('getCells preserves age when setCells includes it', () => {
+      engine.setCells([
+        { x: 0, y: 0, age: 5 },
+        { x: 1, y: 1, age: 10 },
+      ])
+      const cells = sortCells(engine.getCells())
+      expect(cells[0]?.age).toBe(5)
+      expect(cells[1]?.age).toBe(10)
+    })
+
+    it('surviving cells increment age by 1 each step', () => {
+      // Block is a still life — all cells survive every generation
+      engine.setCells([
+        { x: 0, y: 0 },
+        { x: 1, y: 0 },
+        { x: 0, y: 1 },
+        { x: 1, y: 1 },
+      ])
+      engine.step()
+      const cells = engine.getCells()
+      expect(cells.every((c) => c.age === 1)).toBe(true)
+      engine.step()
+      const cells2 = engine.getCells()
+      expect(cells2.every((c) => c.age === 2)).toBe(true)
+    })
+
+    it('newly born cells start with age 0', () => {
+      // Blinker: cells at (1,0),(1,1),(1,2) are born/survive at step 1
+      engine.setCells([
+        { x: 0, y: 1 },
+        { x: 1, y: 1 },
+        { x: 2, y: 1 },
+      ])
+      engine.step()
+      const cells = engine.getCells()
+      // (1,1) survived so age=1; (1,0) and (1,2) were born so age=0
+      const center = cells.find((c) => c.x === 1 && c.y === 1)
+      expect(center?.age).toBe(1)
+      const born = cells.filter((c) => !(c.x === 1 && c.y === 1))
+      expect(born.every((c) => c.age === 0)).toBe(true)
+    })
+
+    it('reset clears ages', () => {
+      engine.setCells([{ x: 0, y: 0 }])
+      engine.step(3)
+      engine.reset()
+      expect(engine.getCells()).toHaveLength(0)
+    })
+
+    it('setCells resets ages to 0 for cells without age', () => {
+      engine.setCells([{ x: 0, y: 0 }])
+      engine.step(5)
+      // Overwrite with fresh cells (no age specified)
+      engine.setCells([{ x: 0, y: 0 }])
+      const cells = engine.getCells()
+      expect(cells[0]?.age).toBe(0)
     })
   })
 

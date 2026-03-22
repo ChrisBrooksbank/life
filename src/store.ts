@@ -115,6 +115,10 @@ export interface AppState {
    */
   jumpToGeneration: (target: number) => void
 
+  /** Whether to color cells by age using a heat-map gradient. */
+  ageColorMode: boolean
+  setAgeColorMode: (enabled: boolean) => void
+
   // Internal: allows overriding which cells are copied (e.g. selection)
   _clipboardCopySource: (() => Cell[] | null) | null
   _setClipboardCopySource: (fn: (() => Cell[] | null) | null) => void
@@ -139,6 +143,7 @@ export const appStore = createStore<AppState>()((set, get) => ({
 
   worker: null,
   pastePreviewCells: null,
+  ageColorMode: false,
 
   // Snapshot history
   snapshots: [],
@@ -259,6 +264,10 @@ export const appStore = createStore<AppState>()((set, get) => ({
     set({ isRunning: false })
     worker.setEngine('hashlife')
     worker.step(delta)
+  },
+
+  setAgeColorMode: (enabled) => {
+    set({ ageColorMode: enabled })
   },
 
   _clipboardCopySource: null,

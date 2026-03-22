@@ -35,7 +35,8 @@ describe('handleCommand — SET_CELLS / STEP / GET_CELLS / RESET / GET_STATE', (
     const resp = handleCommand({ type: 'GET_CELLS', id: 42 })
     expect(resp).toMatchObject({ type: 'CELLS', id: 42 })
     if (resp?.type === 'CELLS') {
-      expect(resp.cells).toEqual([{ x: 3, y: 4 }])
+      expect(resp.cells).toHaveLength(1)
+      expect(resp.cells[0]).toMatchObject({ x: 3, y: 4 })
     }
   })
 
