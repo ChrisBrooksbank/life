@@ -24,7 +24,7 @@ export function hexToRgba(hex: string, alpha: number): RgbaColor {
   return [r, g, b, alpha]
 }
 
-const SHORTCUTS: Array<{ keys: string; description: string }> = [
+export const SHORTCUTS: Array<{ keys: string; description: string }> = [
   { keys: 'Space', description: 'Play / Pause' },
   { keys: '.', description: 'Step forward' },
   { keys: 'R', description: 'Reset' },
@@ -37,6 +37,7 @@ const SHORTCUTS: Array<{ keys: string; description: string }> = [
   { keys: 'Ctrl+Shift+Z', description: 'Redo' },
   { keys: 'Ctrl+C', description: 'Copy selection (RLE)' },
   { keys: 'Ctrl+V', description: 'Paste (RLE)' },
+  { keys: '?', description: 'Show keyboard shortcuts' },
 ]
 
 /** Settings panel: theme, grid toggle, colors, and keyboard shortcut reference. */

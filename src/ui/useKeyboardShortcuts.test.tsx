@@ -21,6 +21,7 @@ function resetStore() {
     activeTool: 'pencil',
     theme: 'dark',
     worker: null,
+    cheatSheetOpen: false,
   })
 }
 
@@ -210,6 +211,20 @@ describe('useKeyboardShortcuts — clipboard', () => {
       )
     })
     expect(copyToClipboard).not.toHaveBeenCalled()
+  })
+})
+
+describe('useKeyboardShortcuts — cheat sheet', () => {
+  it('? opens the cheat sheet', () => {
+    appStore.setState({ cheatSheetOpen: false })
+    pressKey('?')
+    expect(appStore.getState().cheatSheetOpen).toBe(true)
+  })
+
+  it('? toggles the cheat sheet closed when already open', () => {
+    appStore.setState({ cheatSheetOpen: true })
+    pressKey('?')
+    expect(appStore.getState().cheatSheetOpen).toBe(false)
   })
 })
 

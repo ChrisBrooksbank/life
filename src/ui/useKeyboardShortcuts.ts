@@ -42,6 +42,10 @@ const SHORTCUTS: Record<string, () => void> = {
     const { speed, setSpeed } = appStore.getState()
     setSpeed(Math.max(MIN_SPEED, Math.round(speed / 2)))
   },
+  '?': () => {
+    const { cheatSheetOpen, setCheatSheetOpen } = appStore.getState()
+    setCheatSheetOpen(!cheatSheetOpen)
+  },
 }
 
 /** Returns true when keyboard events should be ignored (e.g. user is typing). */

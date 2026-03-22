@@ -123,6 +123,10 @@ export interface AppState {
   showGrid: boolean
   setShowGrid: (show: boolean) => void
 
+  /** Whether the keyboard shortcut cheat sheet is open. */
+  cheatSheetOpen: boolean
+  setCheatSheetOpen: (open: boolean) => void
+
   // Internal: allows overriding which cells are copied (e.g. selection)
   _clipboardCopySource: (() => Cell[] | null) | null
   _setClipboardCopySource: (fn: (() => Cell[] | null) | null) => void
@@ -278,6 +282,12 @@ export const appStore = createStore<AppState>()((set, get) => ({
 
   setShowGrid: (show) => {
     set({ showGrid: show })
+  },
+
+  cheatSheetOpen: false,
+
+  setCheatSheetOpen: (open) => {
+    set({ cheatSheetOpen: open })
   },
 
   _clipboardCopySource: null,

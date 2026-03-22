@@ -12,20 +12,25 @@ import { downloadCanvasAsPng } from './patterns/screenshot'
 import { startRecording } from './patterns/video-export'
 import type { RecordingSession } from './patterns/video-export'
 import { SettingsPanel } from './ui/SettingsPanel'
+import { CheatSheet } from './ui/CheatSheet'
 
 export function App() {
   const [theme, setTheme] = useState(() => appStore.getState().theme)
   const [libraryOpen, setLibraryOpen] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [cheatSheetOpen, setCheatSheetOpen] = useState(() => appStore.getState().cheatSheetOpen)
   const [isRecording, setIsRecording] = useState(false)
   const recordingSessionRef = useRef<RecordingSession | null>(null)
   const isDragging = useFileDrop()
 
   useKeyboardShortcuts()
 
-  // Keep local theme in sync with store and apply to <html> element
+  // Keep local theme and cheat sheet state in sync with store
   useEffect(() => {
-    return appStore.subscribe((s) => setTheme(s.theme))
+    return appStore.subscribe((s) => {
+      setTheme(s.theme)
+      setCheatSheetOpen(s.cheatSheetOpen)
+    })
   }, [])
 
   useEffect(() => {
@@ -54,6 +59,11 @@ export function App() {
 
       {/* Settings panel */}
       {settingsOpen && <SettingsPanel onClose={() => setSettingsOpen(false)} />}
+
+      {/* Keyboard shortcut cheat sheet */}
+      {cheatSheetOpen && (
+        <CheatSheet onClose={() => appStore.getState().setCheatSheetOpen(false)} />
+      )}
 
       {/* HUD overlay — real-time stats */}
       <aside class="app__hud" aria-label="Simulation statistics" aria-live="polite">
