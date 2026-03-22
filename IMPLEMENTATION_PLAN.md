@@ -46,7 +46,7 @@ src/
 
 - [x] Project setup: Vite + TypeScript strict + Preact + Vitest + Playwright (spec: plan.md)
 - [x] Engine shared types and interfaces: Cell, Coordinate, Pattern, EngineInterface (spec: simulation-engine.md)
-- [ ] Naive simulation engine (Set<string> storage, B3/S23, unbounded grid) (spec: simulation-engine.md)
+- [x] Naive simulation engine (Set<string> storage, B3/S23, unbounded grid) (spec: simulation-engine.md)
 - [ ] Configurable rules via Birth/Survival strings (default B3/S23) (spec: simulation-engine.md)
 - [ ] Web Worker wrapper: off-main-thread simulation with message protocol (spec: simulation-engine.md)
 - [ ] WebGL2 renderer: GLSL shaders + instanced quad pipeline for cell drawing (spec: rendering.md)
