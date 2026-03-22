@@ -91,7 +91,7 @@ src/
 - [x] Searchable pattern library sidebar with category filters and text search (spec: pattern-library.md)
 - [x] Pattern preview thumbnails in library (spec: pattern-library.md)
 - [x] Drag-and-drop file import (.rle, .cells, .lif) (spec: pattern-library.md)
-- [ ] URL hash encoding for small pattern sharing (spec: pattern-library.md)
+- [x] URL hash encoding for small pattern sharing (spec: pattern-library.md)
 - [ ] Copy pattern to clipboard in RLE format (spec: pattern-library.md)
 
 ### Phase 3 — Polish
