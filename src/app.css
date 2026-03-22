@@ -115,6 +115,45 @@ body,
   }
 }
 
+/* ── Playback control buttons ─────────────────────────────────────────────── */
+
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.controls__btn {
+  height: 36px;
+  min-width: 64px;
+  padding: 0 14px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 4px;
+  color: #fff;
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+  transition:
+    background 120ms,
+    border-color 120ms;
+}
+
+.controls__btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.18);
+  border-color: rgba(255, 255, 255, 0.32);
+}
+
+.controls__btn:disabled {
+  opacity: 0.38;
+  cursor: not-allowed;
+}
+
+.controls__btn[aria-pressed='true'] {
+  background: rgba(68, 170, 255, 0.2);
+  border-color: rgba(68, 170, 255, 0.5);
+}
+
 /* ── Visible focus indicators ─────────────────────────────────────────────── */
 
 :focus-visible {

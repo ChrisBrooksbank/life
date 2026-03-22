@@ -1,4 +1,5 @@
 import './app.css'
+import { Controls } from './ui/Controls'
 
 export function App() {
   return (
@@ -18,7 +19,7 @@ export function App() {
 
       {/* Playback controls bar */}
       <footer class="app__controls" aria-label="Simulation controls">
-        {/* Play / Pause / Step, speed slider, generation counter added in later tasks */}
+        <Controls />
       </footer>
     </div>
   )
