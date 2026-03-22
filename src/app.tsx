@@ -5,7 +5,10 @@ import { Controls } from './ui/Controls'
 import { HUD } from './ui/HUD'
 import { PatternLibrary } from './ui/PatternLibrary'
 import { PerfMetrics } from './ui/PerfMetrics'
+import { PopulationSparkline } from './ui/PopulationSparkline'
 import { ThemeToggle } from './ui/ThemeToggle'
+import { TimeTravelControls } from './ui/TimeTravelControls'
+import { Toolbar } from './ui/Toolbar'
 import { useFileDrop } from './ui/useFileDrop'
 import { useKeyboardShortcuts } from './ui/useKeyboardShortcuts'
 import { downloadCanvasAsPng } from './patterns/screenshot'
@@ -66,7 +69,7 @@ export function App() {
 
       {/* Drawing toolbar (left on desktop, top strip on mobile) */}
       <nav class="app__toolbar" aria-label="Drawing tools">
-        {/* Tool buttons added in later tasks */}
+        <Toolbar />
       </nav>
 
       {/* Drag-and-drop overlay */}
@@ -92,10 +95,13 @@ export function App() {
         <HUD />
         <hr class="hud__divider" />
         <PerfMetrics />
+        <hr class="hud__divider" />
+        <PopulationSparkline />
       </aside>
 
       {/* Playback controls bar */}
       <footer class="app__controls" aria-label="Simulation controls">
+        <TimeTravelControls />
         <button
           class="app__pattern-library-toggle"
           type="button"

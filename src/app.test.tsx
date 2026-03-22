@@ -82,3 +82,46 @@ describe('App layout skeleton', () => {
     expect(app?.classList.contains('app')).toBe(true)
   })
 })
+
+describe('App responsive layout — component placement', () => {
+  it('renders the Toolbar inside the drawing tools nav', () => {
+    setup()
+    const nav = container.querySelector('nav[aria-label="Drawing tools"]')
+    const toolbar = nav?.querySelector('[role="toolbar"]')
+    expect(toolbar).not.toBeNull()
+  })
+
+  it('renders the PopulationSparkline inside the HUD aside', () => {
+    setup()
+    const hud = container.querySelector('aside[aria-label="Simulation statistics"]')
+    const sparkline = hud?.querySelector('.sparkline')
+    expect(sparkline).not.toBeNull()
+  })
+
+  it('renders the PopulationSparkline with role=img', () => {
+    setup()
+    const sparkline = container.querySelector('.sparkline[role="img"]')
+    expect(sparkline).not.toBeNull()
+  })
+
+  it('renders the controls footer with the screenshot button', () => {
+    setup()
+    const footer = container.querySelector('footer[aria-label="Simulation controls"]')
+    const btn = footer?.querySelector('.app__screenshot-btn')
+    expect(btn).not.toBeNull()
+  })
+
+  it('renders the controls footer with the record button', () => {
+    setup()
+    const footer = container.querySelector('footer[aria-label="Simulation controls"]')
+    const btn = footer?.querySelector('.app__record-btn')
+    expect(btn).not.toBeNull()
+  })
+
+  it('renders toolbar tool buttons inside the drawing tools nav', () => {
+    setup()
+    const nav = container.querySelector('nav[aria-label="Drawing tools"]')
+    const buttons = nav?.querySelectorAll('button')
+    expect(buttons?.length).toBeGreaterThanOrEqual(6)
+  })
+})

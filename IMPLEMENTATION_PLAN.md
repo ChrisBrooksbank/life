@@ -108,7 +108,7 @@ src/
 - [x] Keyboard shortcut cheat sheet (press `?`) (spec: ui-controls.md)
 - [x] Full keyboard navigation with visible focus indicators (spec: ui-controls.md)
 - [x] ARIA labels on all controls + screen reader announcements (spec: ui-controls.md)
-- [ ] Responsive layout: mobile (360px) to desktop (1920px+) (spec: ui-controls.md)
+- [x] Responsive layout: mobile (360px) to desktop (1920px+) (spec: ui-controls.md)
 
 ## Completed
 
