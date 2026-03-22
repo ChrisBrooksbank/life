@@ -154,6 +154,28 @@ body,
   border-color: rgba(68, 170, 255, 0.5);
 }
 
+/* ── Speed slider ─────────────────────────────────────────────────────────── */
+
+.controls__speed {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: default;
+}
+
+.controls__slider {
+  width: 120px;
+  accent-color: #4af;
+  cursor: pointer;
+}
+
+.controls__speed-value {
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: rgba(255, 255, 255, 0.7);
+  min-width: 56px;
+}
+
 /* ── Visible focus indicators ─────────────────────────────────────────────── */
 
 :focus-visible {

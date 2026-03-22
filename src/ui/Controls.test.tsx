@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { render } from 'preact'
 import { act } from 'preact/test-utils'
-import { Controls } from './Controls'
+import { Controls, sliderToSpeed, speedToSlider, MIN_SPEED, MAX_SPEED } from './Controls'
 import { appStore } from '../store'
 import { DEFAULT_RULES } from '../engine/types'
 
@@ -157,6 +157,82 @@ describe('Controls — step interaction', () => {
       '[aria-label="Step simulation forward one generation"]',
     )
     expect(() => act(() => btn?.click())).not.toThrow()
+  })
+})
+
+describe('sliderToSpeed / speedToSlider helpers', () => {
+  it('slider position 0 maps to MIN_SPEED', () => {
+    expect(sliderToSpeed(0)).toBe(MIN_SPEED)
+  })
+
+  it('slider position 100 maps to MAX_SPEED', () => {
+    expect(sliderToSpeed(100)).toBe(MAX_SPEED)
+  })
+
+  it('slider position 50 maps to geometric mean of min and max', () => {
+    const expected = Math.round(Math.sqrt(MIN_SPEED * MAX_SPEED))
+    expect(sliderToSpeed(50)).toBe(expected)
+  })
+
+  it('speedToSlider(MIN_SPEED) returns 0', () => {
+    expect(speedToSlider(MIN_SPEED)).toBeCloseTo(0, 5)
+  })
+
+  it('speedToSlider(MAX_SPEED) returns 100', () => {
+    expect(speedToSlider(MAX_SPEED)).toBeCloseTo(100, 5)
+  })
+
+  it('round-trips: speedToSlider(sliderToSpeed(pos)) ≈ pos within 2 units', () => {
+    for (const pos of [0, 25, 50, 75, 100]) {
+      const roundTrip = speedToSlider(sliderToSpeed(pos))
+      expect(Math.abs(roundTrip - pos)).toBeLessThan(2)
+    }
+  })
+})
+
+describe('Controls — speed slider rendering', () => {
+  beforeEach(() => {
+    resetStore()
+    setup()
+  })
+  afterEach(teardown)
+
+  it('renders a speed slider input', () => {
+    const slider = container.querySelector<HTMLInputElement>('[aria-label="Simulation speed"]')
+    expect(slider).not.toBeNull()
+    expect(slider?.type).toBe('range')
+  })
+
+  it('slider reflects the current speed from the store', () => {
+    appStore.setState({ speed: MAX_SPEED })
+    act(() => {
+      render(<Controls />, container)
+    })
+    const slider = container.querySelector<HTMLInputElement>('[aria-label="Simulation speed"]')
+    expect(Number(slider?.value)).toBeCloseTo(100, 0)
+  })
+
+  it('displays current speed as text', () => {
+    const label = container.querySelector('.controls__speed-value')
+    expect(label?.textContent).toContain('10 gen/s')
+  })
+
+  it('changing slider updates store speed', () => {
+    const slider = container.querySelector<HTMLInputElement>('[aria-label="Simulation speed"]')
+    act(() => {
+      if (slider) {
+        slider.value = '100'
+        slider.dispatchEvent(new Event('input', { bubbles: true }))
+      }
+    })
+    expect(appStore.getState().speed).toBe(MAX_SPEED)
+  })
+
+  it('slider has correct ARIA value attributes', () => {
+    const slider = container.querySelector<HTMLInputElement>('[aria-label="Simulation speed"]')
+    expect(Number(slider?.getAttribute('aria-valuemin'))).toBe(MIN_SPEED)
+    expect(Number(slider?.getAttribute('aria-valuemax'))).toBe(MAX_SPEED)
+    expect(Number(slider?.getAttribute('aria-valuenow'))).toBe(10)
   })
 })
 
