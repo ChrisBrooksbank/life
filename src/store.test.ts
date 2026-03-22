@@ -278,6 +278,128 @@ describe('appStore — pasteFromClipboard (smart paste)', () => {
   })
 })
 
+describe('appStore — copyToClipboard', () => {
+  beforeEach(resetStore)
+
+  it('writes RLE of all live cells to clipboard via worker', async () => {
+    const cells = [
+      { x: 0, y: 0 },
+      { x: 1, y: 0 },
+    ]
+    const mockWorker = {
+      step: vi.fn(),
+      reset: vi.fn(),
+      setRules: vi.fn(),
+      getCells: vi.fn().mockResolvedValue(cells),
+      onState: null,
+    }
+    appStore.setState({ worker: mockWorker as never })
+
+    const writeText = vi.fn().mockResolvedValue(undefined)
+    vi.stubGlobal('navigator', { clipboard: { writeText } })
+
+    getStore().copyToClipboard()
+    await Promise.resolve()
+    await Promise.resolve()
+
+    expect(writeText).toHaveBeenCalledOnce()
+    const written = writeText.mock.calls[0]![0] as string
+    expect(written).toContain('x = 2, y = 1')
+    expect(written).toContain('2o!')
+
+    vi.unstubAllGlobals()
+  })
+
+  it('does nothing when worker is null and no copy source', () => {
+    const writeText = vi.fn()
+    vi.stubGlobal('navigator', { clipboard: { writeText } })
+
+    getStore().copyToClipboard()
+
+    expect(writeText).not.toHaveBeenCalled()
+
+    vi.unstubAllGlobals()
+  })
+
+  it('uses _clipboardCopySource when registered', () => {
+    const selectedCells = [{ x: 5, y: 5 }]
+    getStore()._setClipboardCopySource(() => selectedCells)
+
+    const writeText = vi.fn().mockResolvedValue(undefined)
+    vi.stubGlobal('navigator', { clipboard: { writeText } })
+
+    getStore().copyToClipboard()
+
+    expect(writeText).toHaveBeenCalledOnce()
+    const written = writeText.mock.calls[0]![0] as string
+    expect(written).toContain('x = 1, y = 1')
+
+    vi.unstubAllGlobals()
+  })
+
+  it('falls back to worker when _clipboardCopySource returns null', async () => {
+    const cells = [{ x: 0, y: 0 }]
+    const mockWorker = {
+      step: vi.fn(),
+      reset: vi.fn(),
+      setRules: vi.fn(),
+      getCells: vi.fn().mockResolvedValue(cells),
+      onState: null,
+    }
+    appStore.setState({ worker: mockWorker as never })
+    getStore()._setClipboardCopySource(() => null)
+
+    const writeText = vi.fn().mockResolvedValue(undefined)
+    vi.stubGlobal('navigator', { clipboard: { writeText } })
+
+    getStore().copyToClipboard()
+    await Promise.resolve()
+    await Promise.resolve()
+
+    expect(mockWorker.getCells).toHaveBeenCalled()
+    expect(writeText).toHaveBeenCalledOnce()
+
+    vi.unstubAllGlobals()
+  })
+
+  it('_setClipboardCopySource registers a source function', () => {
+    const source = vi.fn().mockReturnValue(null)
+    getStore()._setClipboardCopySource(source)
+    expect(getStore()._clipboardCopySource).toBe(source)
+  })
+
+  it('_setClipboardCopySource can clear the source', () => {
+    getStore()._setClipboardCopySource(() => [])
+    getStore()._setClipboardCopySource(null)
+    expect(getStore()._clipboardCopySource).toBeNull()
+  })
+
+  it('does not throw when clipboard is unavailable', async () => {
+    const cells = [{ x: 0, y: 0 }]
+    const mockWorker = {
+      step: vi.fn(),
+      reset: vi.fn(),
+      setRules: vi.fn(),
+      getCells: vi.fn().mockResolvedValue(cells),
+      onState: null,
+    }
+    appStore.setState({ worker: mockWorker as never })
+    vi.stubGlobal('navigator', {
+      clipboard: { writeText: vi.fn().mockRejectedValue(new Error('denied')) },
+    })
+
+    await expect(
+      (async () => {
+        getStore().copyToClipboard()
+        await Promise.resolve()
+        await Promise.resolve()
+      })(),
+    ).resolves.not.toThrow()
+
+    vi.unstubAllGlobals()
+  })
+})
+
 describe('appStore — setWorker', () => {
   beforeEach(resetStore)
 
