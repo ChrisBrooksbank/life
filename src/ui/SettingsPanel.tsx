@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'preact/hooks'
+import { useState, useEffect, useRef } from 'preact/hooks'
 import { appStore } from '../store'
 import type { RgbaColor } from '../renderer/themes'
 import { THEME_COLORS } from '../renderer/themes'
+import { useFocusTrap } from './useFocusTrap'
 
 interface SettingsPanelProps {
   onClose: () => void
@@ -42,6 +43,9 @@ export const SHORTCUTS: Array<{ keys: string; description: string }> = [
 
 /** Settings panel: theme, grid toggle, colors, and keyboard shortcut reference. */
 export function SettingsPanel({ onClose }: SettingsPanelProps) {
+  const panelRef = useRef<HTMLDivElement>(null)
+  useFocusTrap(panelRef)
+
   const [theme, setThemeState] = useState(() => appStore.getState().theme)
   const [showGrid, setShowGridState] = useState(() => appStore.getState().showGrid)
   const [themeColors, setThemeColorsState] = useState(() => appStore.getState().themeColors)
@@ -53,6 +57,18 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
       setThemeColorsState(s.themeColors)
     })
   }, [])
+
+  // Close on Escape key
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent): void {
+      if (e.key === 'Escape') {
+        e.preventDefault()
+        onClose()
+      }
+    }
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [onClose])
 
   function handleThemeChange(e: Event) {
     const val = (e.target as HTMLSelectElement).value as 'dark' | 'light'
@@ -85,7 +101,13 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
   }
 
   return (
-    <div class="settings-panel" role="dialog" aria-label="Settings" aria-modal="true">
+    <div
+      class="settings-panel"
+      role="dialog"
+      aria-label="Settings"
+      aria-modal="true"
+      ref={panelRef}
+    >
       <div class="settings-panel__header">
         <h2 class="settings-panel__title">Settings</h2>
         <button

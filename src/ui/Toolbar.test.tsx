@@ -141,3 +141,112 @@ describe('Toolbar — tool selection interactions', () => {
     expect(appStore.getState().activeTool).toBe('pencil')
   })
 })
+
+describe('Toolbar — roving tabindex', () => {
+  beforeEach(() => {
+    resetStore()
+    setup()
+  })
+  afterEach(teardown)
+
+  it('active tool button has tabIndex 0', () => {
+    const btn = container.querySelector<HTMLButtonElement>('[aria-label="Pencil — draw cells"]')
+    expect(btn?.tabIndex).toBe(0)
+  })
+
+  it('inactive tool buttons have tabIndex -1', () => {
+    const btn = container.querySelector<HTMLButtonElement>('[aria-label="Eraser — remove cells"]')
+    expect(btn?.tabIndex).toBe(-1)
+  })
+
+  it('tabIndex updates when active tool changes', () => {
+    act(() => {
+      appStore.setState({ activeTool: 'eraser' })
+      render(<Toolbar />, container)
+    })
+    const pencil = container.querySelector<HTMLButtonElement>('[aria-label="Pencil — draw cells"]')
+    const eraser = container.querySelector<HTMLButtonElement>(
+      '[aria-label="Eraser — remove cells"]',
+    )
+    expect(pencil?.tabIndex).toBe(-1)
+    expect(eraser?.tabIndex).toBe(0)
+  })
+})
+
+describe('Toolbar — arrow key navigation', () => {
+  beforeEach(() => {
+    resetStore()
+    setup()
+  })
+  afterEach(teardown)
+
+  it('ArrowRight moves focus to the next tool button', () => {
+    const pencilBtn = container.querySelector<HTMLButtonElement>(
+      '[aria-label="Pencil — draw cells"]',
+    )
+    pencilBtn?.focus()
+    act(() => {
+      pencilBtn?.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }))
+    })
+    expect(document.activeElement?.getAttribute('aria-label')).toBe('Eraser — remove cells')
+  })
+
+  it('ArrowLeft moves focus to the previous tool button', () => {
+    const eraserBtn = container.querySelector<HTMLButtonElement>(
+      '[aria-label="Eraser — remove cells"]',
+    )
+    eraserBtn?.focus()
+    act(() => {
+      eraserBtn?.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true }))
+    })
+    expect(document.activeElement?.getAttribute('aria-label')).toBe('Pencil — draw cells')
+  })
+
+  it('ArrowRight wraps from the last tool to the first', () => {
+    const fillBtn = container.querySelector<HTMLButtonElement>(
+      '[aria-label="Fill — flood fill enclosed region"]',
+    )
+    fillBtn?.focus()
+    act(() => {
+      fillBtn?.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }))
+    })
+    expect(document.activeElement?.getAttribute('aria-label')).toBe('Pencil — draw cells')
+  })
+
+  it('ArrowLeft wraps from the first tool to the last', () => {
+    const pencilBtn = container.querySelector<HTMLButtonElement>(
+      '[aria-label="Pencil — draw cells"]',
+    )
+    pencilBtn?.focus()
+    act(() => {
+      pencilBtn?.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true }))
+    })
+    expect(document.activeElement?.getAttribute('aria-label')).toBe(
+      'Fill — flood fill enclosed region',
+    )
+  })
+
+  it('Home moves focus to the first tool button', () => {
+    const eraserBtn = container.querySelector<HTMLButtonElement>(
+      '[aria-label="Eraser — remove cells"]',
+    )
+    eraserBtn?.focus()
+    act(() => {
+      eraserBtn?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Home', bubbles: true }))
+    })
+    expect(document.activeElement?.getAttribute('aria-label')).toBe('Pencil — draw cells')
+  })
+
+  it('End moves focus to the last tool button', () => {
+    const pencilBtn = container.querySelector<HTMLButtonElement>(
+      '[aria-label="Pencil — draw cells"]',
+    )
+    pencilBtn?.focus()
+    act(() => {
+      pencilBtn?.dispatchEvent(new KeyboardEvent('keydown', { key: 'End', bubbles: true }))
+    })
+    expect(document.activeElement?.getAttribute('aria-label')).toBe(
+      'Fill — flood fill enclosed region',
+    )
+  })
+})

@@ -1,5 +1,6 @@
-import { useEffect } from 'preact/hooks'
+import { useEffect, useRef } from 'preact/hooks'
 import { SHORTCUTS } from './SettingsPanel'
+import { useFocusTrap } from './useFocusTrap'
 
 interface CheatSheetProps {
   onClose: () => void
@@ -7,6 +8,9 @@ interface CheatSheetProps {
 
 /** Full-screen overlay showing all keyboard shortcuts. Closed by Escape or clicking backdrop. */
 export function CheatSheet({ onClose }: CheatSheetProps) {
+  const dialogRef = useRef<HTMLDivElement>(null)
+  useFocusTrap(dialogRef)
+
   // Close on Escape key
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent): void {
@@ -28,7 +32,7 @@ export function CheatSheet({ onClose }: CheatSheetProps) {
       onClick={onClose}
     >
       {/* Stop click propagation so clicking inside the card doesn't close it */}
-      <div class="cheat-sheet" onClick={(e) => e.stopPropagation()}>
+      <div class="cheat-sheet" ref={dialogRef} onClick={(e) => e.stopPropagation()}>
         <div class="cheat-sheet__header">
           <h2 class="cheat-sheet__title">Keyboard shortcuts</h2>
           <button
