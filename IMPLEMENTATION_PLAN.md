@@ -56,7 +56,7 @@ src/
 - [x] Root App component + responsive layout skeleton (spec: ui-controls.md)
 - [x] Play / Pause / Step controls wired to simulation (spec: ui-controls.md)
 - [x] Variable speed slider (logarithmic, 1 gen/sec to max) (spec: ui-controls.md)
-- [ ] Generation counter display (spec: ui-controls.md)
+- [x] Generation counter display (spec: ui-controls.md)
 - [ ] Pencil tool: toggle cells on click/drag (spec: editor.md)
 - [ ] Eraser tool: remove cells on click/drag (spec: editor.md)
 - [ ] 10 built-in seed patterns (block, blinker, glider, LWSS, pulsar, Gosper gun, R-pentomino, acorn, beacon, toad) (spec: pattern-library.md)

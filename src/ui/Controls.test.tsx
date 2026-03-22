@@ -190,6 +190,38 @@ describe('sliderToSpeed / speedToSlider helpers', () => {
   })
 })
 
+describe('Controls — generation counter', () => {
+  beforeEach(() => {
+    resetStore()
+    setup()
+  })
+  afterEach(teardown)
+
+  it('renders a generation counter element', () => {
+    const el = container.querySelector('[aria-label="Generation counter"]')
+    expect(el).not.toBeNull()
+  })
+
+  it('displays generation 0 initially', () => {
+    const el = container.querySelector('[aria-label="Generation counter"]')
+    expect(el?.textContent?.trim()).toBe('Gen 0')
+  })
+
+  it('displays updated generation from the store', () => {
+    act(() => {
+      appStore.setState({ generation: 42 })
+      render(<Controls />, container)
+    })
+    const el = container.querySelector('[aria-label="Generation counter"]')
+    expect(el?.textContent?.trim()).toBe('Gen 42')
+  })
+
+  it('has aria-live="polite" for screen reader announcements', () => {
+    const el = container.querySelector('[aria-label="Generation counter"]')
+    expect(el?.getAttribute('aria-live')).toBe('polite')
+  })
+})
+
 describe('Controls — speed slider rendering', () => {
   beforeEach(() => {
     resetStore()

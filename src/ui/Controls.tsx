@@ -32,6 +32,7 @@ export function Controls() {
   const [isRunning, setIsRunning] = useState(() => appStore.getState().isRunning)
   const [speed, setSpeedState] = useState(() => appStore.getState().speed)
   const [worker, setWorker] = useState(() => appStore.getState().worker)
+  const [generation, setGeneration] = useState(() => appStore.getState().generation)
 
   // Keep local state in sync with the store
   useEffect(() => {
@@ -39,6 +40,7 @@ export function Controls() {
       setIsRunning(s.isRunning)
       setSpeedState(s.speed)
       setWorker(s.worker)
+      setGeneration(s.generation)
     })
   }, [])
 
@@ -61,6 +63,9 @@ export function Controls() {
 
   return (
     <div class="controls" role="group" aria-label="Playback controls">
+      <output class="controls__generation" aria-label="Generation counter" aria-live="polite">
+        Gen {generation}
+      </output>
       <button
         class="controls__btn"
         type="button"
