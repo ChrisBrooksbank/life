@@ -1,0 +1,97 @@
+import { createStore } from 'zustand/vanilla'
+import { DEFAULT_RULES } from './engine/types'
+import type { Rules } from './engine/types'
+import type { WorkerClient } from './engine/worker-client'
+
+export type DrawingTool = 'pencil' | 'eraser'
+
+export interface AppState {
+  // Simulation state
+  isRunning: boolean
+  generation: number
+  population: number
+  /** Target generations per second (1–1000) */
+  speed: number
+  rules: Rules
+
+  // Editor state
+  activeTool: DrawingTool
+
+  /**
+   * Reference to the simulation worker client.
+   * Set once during app initialisation via setWorker().
+   * Not reactive — mutations to the client object don't trigger re-renders.
+   */
+  worker: WorkerClient | null
+
+  // Actions
+  setWorker: (worker: WorkerClient) => void
+  play: () => void
+  pause: () => void
+  /** Advance by one generation. */
+  step: () => void
+  reset: () => void
+  setSpeed: (speed: number) => void
+  setActiveTool: (tool: DrawingTool) => void
+  setRules: (rules: Rules) => void
+  /** Called by the worker's onState callback to sync generation/population. */
+  updateSimState: (generation: number, population: number) => void
+}
+
+export const appStore = createStore<AppState>()((set, get) => ({
+  // Initial simulation state
+  isRunning: false,
+  generation: 0,
+  population: 0,
+  speed: 10,
+  rules: DEFAULT_RULES,
+
+  // Initial editor state
+  activeTool: 'pencil',
+
+  worker: null,
+
+  setWorker: (worker) => {
+    worker.onState = (generation, population) => {
+      get().updateSimState(generation, population)
+    }
+    set({ worker })
+  },
+
+  play: () => {
+    set({ isRunning: true })
+  },
+
+  pause: () => {
+    set({ isRunning: false })
+  },
+
+  step: () => {
+    const { worker } = get()
+    worker?.step(1)
+  },
+
+  reset: () => {
+    const { worker } = get()
+    worker?.reset()
+    set({ isRunning: false, generation: 0, population: 0 })
+  },
+
+  setSpeed: (speed) => {
+    set({ speed })
+  },
+
+  setActiveTool: (tool) => {
+    set({ activeTool: tool })
+  },
+
+  setRules: (rules) => {
+    const { worker } = get()
+    worker?.setRules(rules)
+    set({ rules })
+  },
+
+  updateSimState: (generation, population) => {
+    set({ generation, population })
+  },
+}))
