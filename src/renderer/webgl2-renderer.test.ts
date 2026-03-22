@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { WebGL2Renderer } from './webgl2-renderer'
+import { WebGL2Renderer, GRID_FADE_START, GRID_FADE_END } from './webgl2-renderer'
 import type { Camera, RendererOptions } from './webgl2-renderer'
 
 // ---------------------------------------------------------------------------
@@ -12,6 +12,8 @@ function createMockGL(canvasWidth = 800, canvasHeight = 600) {
     u_camera: { _name: 'u_camera' },
     u_zoom: { _name: 'u_zoom' },
     u_cellColor: { _name: 'u_cellColor' },
+    u_gridColor: { _name: 'u_gridColor' },
+    u_gridAlpha: { _name: 'u_gridAlpha' },
   }
 
   return {
@@ -29,6 +31,9 @@ function createMockGL(canvasWidth = 800, canvasHeight = 600) {
     FLOAT: 5126,
     TRIANGLE_STRIP: 5,
     COLOR_BUFFER_BIT: 16384,
+    BLEND: 3042,
+    SRC_ALPHA: 770,
+    ONE_MINUS_SRC_ALPHA: 771,
 
     // Shader / program
     createShader: vi.fn(() => ({})),
@@ -77,6 +82,12 @@ function createMockGL(canvasWidth = 800, canvasHeight = 600) {
     clearColor: vi.fn(),
     clear: vi.fn(),
     drawArraysInstanced: vi.fn(),
+    drawArrays: vi.fn(),
+
+    // Blending
+    enable: vi.fn(),
+    disable: vi.fn(),
+    blendFunc: vi.fn(),
   }
 }
 
@@ -118,12 +129,12 @@ describe('WebGL2Renderer', () => {
     expect(() => new WebGL2Renderer(badCanvas)).toThrow('WebGL2 is not supported')
   })
 
-  it('creates exactly one VAO during construction', () => {
-    expect(gl.createVertexArray).toHaveBeenCalledOnce()
+  it('creates two VAOs during construction (cell + grid)', () => {
+    expect(gl.createVertexArray).toHaveBeenCalledTimes(2)
   })
 
-  it('creates two buffers during construction (quad + instance)', () => {
-    expect(gl.createBuffer).toHaveBeenCalledTimes(2)
+  it('creates three buffers during construction (quad + instance + grid quad)', () => {
+    expect(gl.createBuffer).toHaveBeenCalledTimes(3)
   })
 
   it('marks a_cellPos as instanced (divisor 1)', () => {
@@ -235,18 +246,118 @@ describe('WebGL2Renderer', () => {
 
   // --- dispose() ---
 
-  it('dispose() deletes the program', () => {
+  it('dispose() deletes both programs', () => {
     renderer.dispose()
-    expect(gl.deleteProgram).toHaveBeenCalled()
+    expect(gl.deleteProgram).toHaveBeenCalledTimes(2)
   })
 
-  it('dispose() deletes both buffers', () => {
+  it('dispose() deletes all three buffers', () => {
     renderer.dispose()
-    expect(gl.deleteBuffer).toHaveBeenCalledTimes(2)
+    expect(gl.deleteBuffer).toHaveBeenCalledTimes(3)
   })
 
-  it('dispose() deletes the VAO', () => {
+  it('dispose() deletes both VAOs', () => {
     renderer.dispose()
-    expect(gl.deleteVertexArray).toHaveBeenCalled()
+    expect(gl.deleteVertexArray).toHaveBeenCalledTimes(2)
+  })
+
+  // --- Grid overlay ---
+
+  it('does not call drawArrays when grid is off (default)', () => {
+    renderer.render([{ x: 0, y: 0 }], { x: 0, y: 0, zoom: 16 })
+    expect(gl.drawArrays).not.toHaveBeenCalled()
+  })
+
+  it('does not draw grid when zoom is below GRID_FADE_START', () => {
+    renderer.setGrid(true)
+    renderer.render([], { x: 0, y: 0, zoom: GRID_FADE_START - 1 })
+    expect(gl.drawArrays).not.toHaveBeenCalled()
+  })
+
+  it('draws grid overlay when showGrid=true and zoom >= GRID_FADE_END', () => {
+    renderer.setGrid(true)
+    renderer.render([], { x: 0, y: 0, zoom: GRID_FADE_END })
+    expect(gl.drawArrays).toHaveBeenCalledWith(gl.TRIANGLE_STRIP, 0, 4)
+  })
+
+  it('draws grid overlay when showGrid=true and zoom is in fade range', () => {
+    renderer.setGrid(true)
+    renderer.render([], { x: 0, y: 0, zoom: (GRID_FADE_START + GRID_FADE_END) / 2 })
+    expect(gl.drawArrays).toHaveBeenCalledWith(gl.TRIANGLE_STRIP, 0, 4)
+  })
+
+  it('enables blending before grid draw and disables after', () => {
+    renderer.setGrid(true)
+    renderer.render([], { x: 0, y: 0, zoom: GRID_FADE_END })
+    expect(gl.enable).toHaveBeenCalledWith(gl.BLEND)
+    expect(gl.disable).toHaveBeenCalledWith(gl.BLEND)
+  })
+
+  it('sets u_gridAlpha=1 when zoom >= GRID_FADE_END', () => {
+    renderer.setGrid(true)
+    renderer.render([], { x: 0, y: 0, zoom: GRID_FADE_END })
+    const calls = gl.uniform1f.mock.calls
+    const alphaCall = calls.find(([loc]) => (loc as Record<string, string>)._name === 'u_gridAlpha')
+    expect(alphaCall).toBeDefined()
+    expect(alphaCall![1]).toBe(1)
+  })
+
+  it('sets u_gridAlpha=0.5 at midpoint of fade range', () => {
+    renderer.setGrid(true)
+    const midZoom = (GRID_FADE_START + GRID_FADE_END) / 2
+    renderer.render([], { x: 0, y: 0, zoom: midZoom })
+    const calls = gl.uniform1f.mock.calls
+    const alphaCall = calls.find(([loc]) => (loc as Record<string, string>)._name === 'u_gridAlpha')
+    expect(alphaCall).toBeDefined()
+    expect(alphaCall![1]).toBeCloseTo(0.5)
+  })
+
+  it('setGrid(false) stops grid rendering', () => {
+    renderer.setGrid(true)
+    renderer.setGrid(false)
+    renderer.render([], { x: 0, y: 0, zoom: GRID_FADE_END })
+    expect(gl.drawArrays).not.toHaveBeenCalled()
+  })
+
+  it('setColors() updates grid color', () => {
+    renderer.setGrid(true)
+    renderer.setColors({ gridColor: [1, 0, 0, 1] })
+    renderer.render([], { x: 0, y: 0, zoom: GRID_FADE_END })
+    const calls = gl.uniform4fv.mock.calls
+    const gridColorCall = calls.find(
+      ([loc]) => (loc as Record<string, string>)._name === 'u_gridColor',
+    )
+    expect(gridColorCall).toBeDefined()
+    expect(gridColorCall![1]).toEqual([1, 0, 0, 1])
+  })
+
+  it('accepts showGrid=true via constructor options', () => {
+    const options: RendererOptions = { showGrid: true }
+    const r = new WebGL2Renderer(canvas, options)
+    r.render([], { x: 0, y: 0, zoom: GRID_FADE_END })
+    expect(gl.drawArrays).toHaveBeenCalledWith(gl.TRIANGLE_STRIP, 0, 4)
+  })
+
+  // --- gridAlpha() static helper ---
+
+  it('gridAlpha returns 0 at or below GRID_FADE_START', () => {
+    expect(WebGL2Renderer.gridAlpha(GRID_FADE_START)).toBe(0)
+    expect(WebGL2Renderer.gridAlpha(0)).toBe(0)
+    expect(WebGL2Renderer.gridAlpha(1)).toBe(0)
+  })
+
+  it('gridAlpha returns 1 at or above GRID_FADE_END', () => {
+    expect(WebGL2Renderer.gridAlpha(GRID_FADE_END)).toBe(1)
+    expect(WebGL2Renderer.gridAlpha(GRID_FADE_END + 10)).toBe(1)
+  })
+
+  it('gridAlpha returns 0.5 at midpoint', () => {
+    const mid = (GRID_FADE_START + GRID_FADE_END) / 2
+    expect(WebGL2Renderer.gridAlpha(mid)).toBeCloseTo(0.5)
+  })
+
+  it('gridAlpha is linear between fade bounds', () => {
+    const quarter = GRID_FADE_START + (GRID_FADE_END - GRID_FADE_START) * 0.25
+    expect(WebGL2Renderer.gridAlpha(quarter)).toBeCloseTo(0.25)
   })
 })
