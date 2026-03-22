@@ -17,6 +17,12 @@ export interface InputHandlerOptions {
    * Default: 0.5
    */
   inertiaMinVelocity?: number
+  /**
+   * Called on mousedown to decide whether a pan gesture should begin.
+   * When omitted, panning is always allowed.
+   * Return false to suppress pan (e.g. when a drawing tool is active).
+   */
+  shouldPan?: () => boolean
 }
 
 /**
@@ -40,6 +46,7 @@ export function createInputHandler(
   const wheelZoomFactor = options.wheelZoomFactor ?? 1.15
   const inertiaFriction = options.inertiaFriction ?? 0.85
   const inertiaMinVelocity = options.inertiaMinVelocity ?? 0.5
+  const shouldPan = options.shouldPan
 
   // ── Inertia state ──────────────────────────────────────────────────────────
   // Velocity is in pixels per frame (updated on each pointer move via EMA).
@@ -89,6 +96,7 @@ export function createInputHandler(
   // ── Mouse pan ──────────────────────────────────────────────────────────────
   function onMouseDown(e: MouseEvent) {
     if (e.button !== 0) return
+    if (shouldPan && !shouldPan()) return
     stopInertia()
     isDragging = true
     lastX = e.clientX
