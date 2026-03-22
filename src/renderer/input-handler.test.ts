@@ -332,6 +332,145 @@ describe('createInputHandler', () => {
     expect(camera.x).toBeCloseTo(-10 / 16)
   })
 
+  // ── Touch draw (shouldDraw) ──────────────────────────────────────────────
+
+  describe('shouldDraw option', () => {
+    let drawCanvas: HTMLCanvasElement
+    let drawCamera: Camera
+    let drawSetCamera: ReturnType<typeof vi.fn>
+    let drawDispose: () => void
+    let mouseEvents: Array<{ type: string; clientX: number; clientY: number }>
+
+    // Stable listener references so we can remove them in afterEach
+    let onMouseDownSpy: (e: MouseEvent) => void
+    let onMouseMoveSpy: (e: MouseEvent) => void
+    let onMouseUpSpy: () => void
+
+    beforeEach(() => {
+      drawCanvas = makeCanvas()
+      drawCamera = makeCamera()
+      drawSetCamera = vi.fn((c: Camera) => {
+        drawCamera = c
+      })
+      mouseEvents = []
+
+      onMouseDownSpy = (e: MouseEvent) => {
+        mouseEvents.push({ type: 'mousedown', clientX: e.clientX, clientY: e.clientY })
+      }
+      onMouseMoveSpy = (e: MouseEvent) => {
+        mouseEvents.push({ type: 'mousemove', clientX: e.clientX, clientY: e.clientY })
+      }
+      onMouseUpSpy = () => {
+        mouseEvents.push({ type: 'mouseup', clientX: 0, clientY: 0 })
+      }
+
+      // Spy on events dispatched to canvas and window
+      drawCanvas.addEventListener('mousedown', onMouseDownSpy)
+      window.addEventListener('mousemove', onMouseMoveSpy)
+      window.addEventListener('mouseup', onMouseUpSpy)
+
+      drawDispose = createInputHandler(drawCanvas, () => drawCamera, drawSetCamera, {
+        shouldDraw: () => true,
+      })
+    })
+
+    afterEach(() => {
+      drawDispose()
+      drawCanvas.removeEventListener('mousedown', onMouseDownSpy)
+      window.removeEventListener('mousemove', onMouseMoveSpy)
+      window.removeEventListener('mouseup', onMouseUpSpy)
+    })
+
+    it('single-finger touchstart dispatches synthetic mousedown', () => {
+      const t = makeTouch(1, 100, 150)
+      touchStart(drawCanvas, [t])
+
+      expect(mouseEvents).toHaveLength(1)
+      expect(mouseEvents[0]).toMatchObject({ type: 'mousedown', clientX: 100, clientY: 150 })
+    })
+
+    it('single-finger touchmove dispatches synthetic mousemove', () => {
+      const t = makeTouch(1, 100, 150)
+      touchStart(drawCanvas, [t])
+      mouseEvents.length = 0
+
+      const t2 = makeTouch(1, 110, 160)
+      touchMove(drawCanvas, [t2], [t2])
+
+      expect(mouseEvents).toHaveLength(1)
+      expect(mouseEvents[0]).toMatchObject({ type: 'mousemove', clientX: 110, clientY: 160 })
+    })
+
+    it('single-finger touchend dispatches synthetic mouseup', () => {
+      const t = makeTouch(1, 100, 150)
+      touchStart(drawCanvas, [t])
+      mouseEvents.length = 0
+
+      touchEnd(drawCanvas, [t], [])
+
+      expect(mouseEvents).toHaveLength(1)
+      expect(mouseEvents[0]?.type).toBe('mouseup')
+    })
+
+    it('single-finger touch draw does NOT pan the camera', () => {
+      const t = makeTouch(1, 100, 100)
+      touchStart(drawCanvas, [t])
+
+      const t2 = makeTouch(1, 150, 100)
+      touchMove(drawCanvas, [t2], [t2])
+
+      expect(drawSetCamera).not.toHaveBeenCalled()
+    })
+
+    it('second finger arriving during draw dispatches mouseup (cancels draw)', () => {
+      const t1 = makeTouch(1, 100, 100)
+      touchStart(drawCanvas, [t1])
+      mouseEvents.length = 0
+
+      const t2 = makeTouch(2, 200, 100)
+      touchStart(drawCanvas, [t1, t2])
+
+      const upEvents = mouseEvents.filter((e) => e.type === 'mouseup')
+      expect(upEvents).toHaveLength(1)
+    })
+
+    it('two-finger gestures still pan camera even when shouldDraw is true', () => {
+      const t1 = makeTouch(1, 350, 280)
+      const t2 = makeTouch(2, 450, 320)
+      touchStart(drawCanvas, [t1, t2])
+
+      const t1b = makeTouch(1, 360, 280)
+      const t2b = makeTouch(2, 460, 320)
+      touchMove(drawCanvas, [t1b, t2b], [t1b, t2b])
+
+      expect(drawSetCamera).toHaveBeenCalled()
+      expect(drawCamera.x).toBeCloseTo(-10 / 16)
+    })
+
+    it('when shouldDraw returns false, single-finger still pans', () => {
+      // Dispose the draw handler and create one with shouldDraw: () => false
+      drawDispose()
+      drawCamera = makeCamera()
+      drawSetCamera = vi.fn((c: Camera) => {
+        drawCamera = c
+      })
+      drawDispose = createInputHandler(drawCanvas, () => drawCamera, drawSetCamera, {
+        shouldDraw: () => false,
+      })
+      mouseEvents.length = 0
+
+      const t = makeTouch(1, 100, 100)
+      touchStart(drawCanvas, [t])
+
+      const t2 = makeTouch(1, 120, 110)
+      touchMove(drawCanvas, [t2], [t2])
+
+      expect(drawSetCamera).toHaveBeenCalledOnce()
+      expect(drawCamera.x).toBeCloseTo(-20 / 16)
+      expect(mouseEvents.filter((e) => e.type === 'mousedown')).toHaveLength(0)
+    })
+  })
+
   // ── Dispose ─────────────────────────────────────────────────────────────
 
   it('dispose stops inertia', () => {
