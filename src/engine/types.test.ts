@@ -69,6 +69,9 @@ describe('EngineInterface', () => {
         cells = []
         gen = 0
       },
+      setGeneration(n: number) {
+        gen = n
+      },
     }
 
     engine.setCells([{ x: 0, y: 0 }])

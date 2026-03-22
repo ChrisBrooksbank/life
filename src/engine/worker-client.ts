@@ -1,5 +1,5 @@
 import type { Cell, Rules } from './types'
-import type { WorkerCommand, WorkerResponse } from './worker-protocol'
+import type { WorkerCommand, WorkerResponse, EngineType } from './worker-protocol'
 
 export type StateCallback = (generation: number, population: number) => void
 
@@ -81,6 +81,15 @@ export class WorkerClient {
   /** Update the active rules (takes effect on the next step). */
   setRules(rules: Rules): void {
     this._send({ type: 'SET_RULES', rules })
+  }
+
+  /**
+   * Switch the active simulation engine.
+   * 'naive' is used for real-time editing; 'hashlife' for fast-forward.
+   * Cell state and generation are preserved across the switch. Triggers onState callback.
+   */
+  setEngine(engine: EngineType): void {
+    this._send({ type: 'SET_ENGINE', engine })
   }
 
   /** Request the current generation and population. */

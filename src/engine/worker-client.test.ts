@@ -87,6 +87,100 @@ describe('handleCommand — SET_CELLS / STEP / GET_CELLS / RESET / GET_STATE', (
 })
 
 // ---------------------------------------------------------------------------
+// Engine switching tests
+// ---------------------------------------------------------------------------
+
+describe('handleCommand — SET_ENGINE', () => {
+  beforeEach(() => {
+    handleCommand({ type: 'RESET' })
+    // Ensure we start on naive engine
+    handleCommand({ type: 'SET_ENGINE', engine: 'naive' })
+  })
+
+  it('returns STATE after switching to hashlife', () => {
+    handleCommand({
+      type: 'SET_CELLS',
+      cells: [
+        { x: 0, y: 0 },
+        { x: 1, y: 0 },
+      ],
+    })
+    const resp = handleCommand({ type: 'SET_ENGINE', engine: 'hashlife' })
+    expect(resp).toMatchObject({ type: 'STATE', population: 2 })
+  })
+
+  it('returns null when switching to the already-active engine', () => {
+    const resp = handleCommand({ type: 'SET_ENGINE', engine: 'naive' })
+    expect(resp).toBeNull()
+  })
+
+  it('preserves cells when switching from naive to hashlife', () => {
+    const cells = [
+      { x: 1, y: 2 },
+      { x: 3, y: 4 },
+      { x: 5, y: 6 },
+    ]
+    handleCommand({ type: 'SET_CELLS', cells })
+    handleCommand({ type: 'SET_ENGINE', engine: 'hashlife' })
+    const resp = handleCommand({ type: 'GET_CELLS', id: 10 })
+    expect(resp?.type).toBe('CELLS')
+    if (resp?.type === 'CELLS') {
+      const sorted = (arr: { x: number; y: number }[]) =>
+        [...arr].sort((a, b) => a.x - b.x || a.y - b.y)
+      expect(sorted(resp.cells)).toEqual(sorted(cells))
+    }
+  })
+
+  it('preserves cells when switching from hashlife back to naive', () => {
+    const cells = [
+      { x: 0, y: 0 },
+      { x: 1, y: 1 },
+    ]
+    handleCommand({ type: 'SET_CELLS', cells })
+    handleCommand({ type: 'SET_ENGINE', engine: 'hashlife' })
+    handleCommand({ type: 'SET_ENGINE', engine: 'naive' })
+    const resp = handleCommand({ type: 'GET_CELLS', id: 11 })
+    expect(resp?.type).toBe('CELLS')
+    if (resp?.type === 'CELLS') {
+      expect(resp.cells).toHaveLength(2)
+    }
+  })
+
+  it('preserves generation when switching engines', () => {
+    // Blinker — step a few generations on naive, then switch to hashlife
+    handleCommand({
+      type: 'SET_CELLS',
+      cells: [
+        { x: 0, y: 1 },
+        { x: 1, y: 1 },
+        { x: 2, y: 1 },
+      ],
+    })
+    handleCommand({ type: 'STEP', generations: 3 })
+    handleCommand({ type: 'SET_ENGINE', engine: 'hashlife' })
+    const resp = handleCommand({ type: 'GET_STATE', id: 99 })
+    expect(resp?.type).toBe('STATE_REPLY')
+    if (resp?.type === 'STATE_REPLY') {
+      expect(resp.generation).toBe(3)
+    }
+  })
+
+  it('applies rules on both engines after SET_RULES', () => {
+    handleCommand({ type: 'SET_RULES', rules: { birth: [], survival: [] } })
+    handleCommand({ type: 'SET_CELLS', cells: [{ x: 0, y: 0 }] })
+    handleCommand({ type: 'SET_ENGINE', engine: 'hashlife' })
+    handleCommand({ type: 'STEP', generations: 1 })
+    const resp = handleCommand({ type: 'GET_CELLS', id: 20 })
+    // Restore
+    handleCommand({ type: 'SET_RULES', rules: { birth: [3], survival: [2, 3] } })
+    expect(resp?.type).toBe('CELLS')
+    if (resp?.type === 'CELLS') {
+      expect(resp.cells).toHaveLength(0)
+    }
+  })
+})
+
+// ---------------------------------------------------------------------------
 // Integration tests for WorkerClient using a mock Worker
 // ---------------------------------------------------------------------------
 

@@ -47,6 +47,10 @@ export class NaiveEngine implements EngineInterface {
     this._generation = 0
   }
 
+  setGeneration(generation: number): void {
+    this._generation = generation
+  }
+
   private _stepOnce(current: Set<string>): Set<string> {
     // Count neighbors for every cell adjacent to a live cell
     const neighborCount = new Map<string, number>()

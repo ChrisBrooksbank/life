@@ -168,6 +168,10 @@ export class HashLifeEngine implements EngineInterface {
     this._root = this._emptyNode(3)
   }
 
+  setGeneration(generation: number): void {
+    this._generation = generation
+  }
+
   // -------------------------------------------------------------------------
   // Internal helpers
   // -------------------------------------------------------------------------
