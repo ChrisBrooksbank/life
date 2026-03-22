@@ -1,6 +1,7 @@
 import { useState } from 'preact/hooks'
 import { CATALOGUE, type CataloguePattern, type PatternCategory } from '../patterns/catalogue'
 import { appStore } from '../store'
+import { PatternThumbnail } from './PatternThumbnail'
 
 const ALL_CATEGORIES: PatternCategory[] = [
   'still-life',
@@ -107,19 +108,22 @@ export function PatternLibrary({ onClose }: PatternLibraryProps) {
               onClick={() => handleSelect(pattern)}
               aria-label={`Load pattern: ${pattern.name}`}
             >
-              <span class="pattern-library__item-name">{pattern.name}</span>
-              <span class="pattern-library__item-meta">
-                <span class="pattern-library__item-category">
-                  {CATEGORY_LABELS[pattern.category]}
+              <PatternThumbnail cells={pattern.cells} />
+              <span class="pattern-library__item-info">
+                <span class="pattern-library__item-name">{pattern.name}</span>
+                <span class="pattern-library__item-meta">
+                  <span class="pattern-library__item-category">
+                    {CATEGORY_LABELS[pattern.category]}
+                  </span>
+                  {pattern.population !== undefined && (
+                    <span class="pattern-library__item-pop">{pattern.population} cells</span>
+                  )}
+                  {pattern.year !== undefined && (
+                    <span class="pattern-library__item-year">{pattern.year}</span>
+                  )}
                 </span>
-                {pattern.population !== undefined && (
-                  <span class="pattern-library__item-pop">{pattern.population} cells</span>
-                )}
-                {pattern.year !== undefined && (
-                  <span class="pattern-library__item-year">{pattern.year}</span>
-                )}
+                <span class="pattern-library__item-desc">{pattern.description}</span>
               </span>
-              <span class="pattern-library__item-desc">{pattern.description}</span>
             </button>
           </li>
         ))}

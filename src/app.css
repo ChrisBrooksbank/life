@@ -441,9 +441,27 @@ body,
   color: var(--color-text);
   font-family: inherit;
   display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 8px;
+  transition: background 100ms;
+}
+
+.pattern-thumbnail {
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+  border-radius: 4px;
+  background: var(--color-bg-canvas, rgba(128, 128, 128, 0.1));
+  color: var(--color-cell, var(--color-text));
+}
+
+.pattern-library__item-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
   flex-direction: column;
   gap: 2px;
-  transition: background 100ms;
 }
 
 .pattern-library__item-btn:hover {
