@@ -35,11 +35,32 @@ describe('App layout skeleton', () => {
     expect(toolbar).not.toBeNull()
   })
 
-  it('renders the HUD aside with aria-live region', () => {
+  it('renders the HUD aside with accessible label', () => {
     setup()
     const hud = container.querySelector('aside[aria-label="Simulation statistics"]')
     expect(hud).not.toBeNull()
-    expect(hud?.getAttribute('aria-live')).toBe('polite')
+  })
+
+  it('renders a polite screen reader live region', () => {
+    setup()
+    const region = container.querySelector('#sr-polite')
+    expect(region).not.toBeNull()
+    expect(region?.getAttribute('aria-live')).toBe('polite')
+    expect(region?.getAttribute('aria-atomic')).toBe('true')
+  })
+
+  it('renders an assertive screen reader live region', () => {
+    setup()
+    const region = container.querySelector('#sr-assertive')
+    expect(region).not.toBeNull()
+    expect(region?.getAttribute('aria-live')).toBe('assertive')
+    expect(region?.getAttribute('aria-atomic')).toBe('true')
+  })
+
+  it('screen reader live regions have sr-only class', () => {
+    setup()
+    expect(container.querySelector('#sr-polite')?.classList.contains('sr-only')).toBe(true)
+    expect(container.querySelector('#sr-assertive')?.classList.contains('sr-only')).toBe(true)
   })
 
   it('renders the controls footer with accessible label', () => {

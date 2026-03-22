@@ -13,6 +13,7 @@ import { startRecording } from './patterns/video-export'
 import type { RecordingSession } from './patterns/video-export'
 import { SettingsPanel } from './ui/SettingsPanel'
 import { CheatSheet } from './ui/CheatSheet'
+import { announce } from './ui/announce'
 
 export function App() {
   const [theme, setTheme] = useState(() => appStore.getState().theme)
@@ -33,12 +34,33 @@ export function App() {
     })
   }, [])
 
+  // Screen reader announcements for important state changes
+  useEffect(() => {
+    let prevIsRunning = appStore.getState().isRunning
+    let prevActiveTool = appStore.getState().activeTool
+
+    return appStore.subscribe((s) => {
+      if (s.isRunning !== prevIsRunning) {
+        announce(s.isRunning ? 'Simulation started' : 'Simulation paused')
+        prevIsRunning = s.isRunning
+      }
+      if (s.activeTool !== prevActiveTool) {
+        announce(`Tool: ${s.activeTool}`)
+        prevActiveTool = s.activeTool
+      }
+    })
+  }, [])
+
   useEffect(() => {
     document.documentElement.dataset['theme'] = theme
   }, [theme])
 
   return (
     <div class="app" role="application" aria-label="Conway's Game of Life">
+      {/* Visually-hidden live regions for screen reader announcements */}
+      <div id="sr-polite" class="sr-only" aria-live="polite" aria-atomic="true" />
+      <div id="sr-assertive" class="sr-only" aria-live="assertive" aria-atomic="true" />
+
       {/* Simulation canvas — renderer attaches here */}
       <canvas id="life-canvas" class="app__canvas" aria-hidden="true" />
 
@@ -66,7 +88,7 @@ export function App() {
       )}
 
       {/* HUD overlay — real-time stats */}
-      <aside class="app__hud" aria-label="Simulation statistics" aria-live="polite">
+      <aside class="app__hud" aria-label="Simulation statistics">
         <HUD />
         <hr class="hud__divider" />
         <PerfMetrics />

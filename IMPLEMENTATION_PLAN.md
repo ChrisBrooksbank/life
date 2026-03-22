@@ -107,7 +107,7 @@ src/
 - [x] Settings panel: theme, grid toggle, colors, key bindings (spec: ui-controls.md)
 - [x] Keyboard shortcut cheat sheet (press `?`) (spec: ui-controls.md)
 - [x] Full keyboard navigation with visible focus indicators (spec: ui-controls.md)
-- [ ] ARIA labels on all controls + screen reader announcements (spec: ui-controls.md)
+- [x] ARIA labels on all controls + screen reader announcements (spec: ui-controls.md)
 - [ ] Responsive layout: mobile (360px) to desktop (1920px+) (spec: ui-controls.md)
 
 ## Completed
