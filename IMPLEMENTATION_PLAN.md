@@ -84,7 +84,7 @@ src/
 - [x] Smart paste: live preview follows cursor, places on click (spec: editor.md)
 - [x] RLE format parser (import) (spec: pattern-library.md)
 - [x] Plaintext (.cells) format parser (import) (spec: pattern-library.md)
-- [ ] Life 1.06 (.lif) format parser (import) (spec: pattern-library.md)
+- [x] Life 1.06 (.lif) format parser (import) (spec: pattern-library.md)
 - [ ] RLE format exporter (spec: pattern-library.md)
 - [ ] Plaintext format exporter (spec: pattern-library.md)
 - [ ] Built-in catalogue of 50+ patterns with full metadata (name, description, discoverer, year, period, population) (spec: pattern-library.md)
