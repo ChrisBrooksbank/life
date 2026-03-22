@@ -87,7 +87,7 @@ src/
 - [x] Life 1.06 (.lif) format parser (import) (spec: pattern-library.md)
 - [x] RLE format exporter (spec: pattern-library.md)
 - [x] Plaintext format exporter (spec: pattern-library.md)
-- [ ] Built-in catalogue of 50+ patterns with full metadata (name, description, discoverer, year, period, population) (spec: pattern-library.md)
+- [x] Built-in catalogue of 50+ patterns with full metadata (name, description, discoverer, year, period, population) (spec: pattern-library.md)
 - [ ] Searchable pattern library sidebar with category filters and text search (spec: pattern-library.md)
 - [ ] Pattern preview thumbnails in library (spec: pattern-library.md)
 - [ ] Drag-and-drop file import (.rle, .cells, .lif) (spec: pattern-library.md)
