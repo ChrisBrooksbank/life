@@ -6,6 +6,11 @@ import { THEME_COLORS } from './renderer/themes'
 import type { Theme, ThemeColors } from './renderer/themes'
 import { historyManager } from './editor/history'
 import { encodeRle, decodeRle } from './patterns/rle'
+import { SnapshotHistory } from './engine/snapshot-history'
+import type { Snapshot } from './engine/snapshot-history'
+
+/** How many generations between automatic snapshots during playback. */
+export const SNAPSHOT_INTERVAL = 50
 
 export type DrawingTool =
   | 'pencil'
@@ -87,9 +92,28 @@ export interface AppState {
   /** Cancel an in-progress smart-paste preview. */
   cancelPastePreview: () => void
 
+  // Snapshot history for time travel / rewind
+  /** Ordered list of snapshots available for time travel (oldest first). */
+  snapshots: Snapshot[]
+  /** True when there is at least one snapshot to rewind to. */
+  canRewind: boolean
+  /**
+   * Manually capture a snapshot of the current simulation state.
+   * The worker must be set.  No-op otherwise.
+   */
+  takeSnapshot: () => Promise<void>
+  /**
+   * Restore the simulation to the snapshot at the given index (0 = oldest).
+   * Clears all snapshots that are newer than the restored one.
+   * Pauses the simulation.
+   */
+  rewindTo: (index: number) => void
+
   // Internal: allows overriding which cells are copied (e.g. selection)
   _clipboardCopySource: (() => Cell[] | null) | null
   _setClipboardCopySource: (fn: (() => Cell[] | null) | null) => void
+  /** Internal snapshot history instance (not reactive). */
+  _snapshotHistory: SnapshotHistory
 }
 
 export const appStore = createStore<AppState>()((set, get) => ({
@@ -109,6 +133,11 @@ export const appStore = createStore<AppState>()((set, get) => ({
 
   worker: null,
   pastePreviewCells: null,
+
+  // Snapshot history
+  snapshots: [],
+  canRewind: false,
+  _snapshotHistory: new SnapshotHistory(),
 
   setWorker: (worker) => {
     worker.onState = (generation, population) => {
@@ -131,10 +160,11 @@ export const appStore = createStore<AppState>()((set, get) => ({
   },
 
   reset: () => {
-    const { worker } = get()
+    const { worker, _snapshotHistory } = get()
     worker?.reset()
     historyManager.clear()
-    set({ isRunning: false, generation: 0, population: 0 })
+    _snapshotHistory.clear()
+    set({ isRunning: false, generation: 0, population: 0, snapshots: [], canRewind: false })
   },
 
   undo: () => {
@@ -179,6 +209,40 @@ export const appStore = createStore<AppState>()((set, get) => ({
 
   updateSimState: (generation, population) => {
     set({ generation, population })
+    // Auto-snapshot at regular intervals during playback
+    if (generation > 0 && generation % SNAPSHOT_INTERVAL === 0) {
+      // Fire-and-forget; takeSnapshot reads generation from state at call time
+      void get().takeSnapshot()
+    }
+  },
+
+  takeSnapshot: async () => {
+    const { worker, generation, _snapshotHistory } = get()
+    if (!worker) return
+    const cells = await worker.getCells()
+    _snapshotHistory.push(generation, cells)
+    set({ snapshots: _snapshotHistory.snapshots.slice(), canRewind: _snapshotHistory.canRewind })
+  },
+
+  rewindTo: (index: number) => {
+    const { worker, _snapshotHistory } = get()
+    if (!worker) return
+    const snapshot = _snapshotHistory.get(index)
+    if (!snapshot) return
+    // Restore cells and generation
+    worker.setCells(snapshot.cells)
+    // Truncate history so that entries after this point are removed
+    const kept = _snapshotHistory.snapshots.slice(0, index)
+    _snapshotHistory.clear()
+    for (const s of kept) {
+      _snapshotHistory.push(s.generation, s.cells)
+    }
+    set({
+      isRunning: false,
+      generation: snapshot.generation,
+      snapshots: _snapshotHistory.snapshots.slice(),
+      canRewind: _snapshotHistory.canRewind,
+    })
   },
 
   _clipboardCopySource: null,

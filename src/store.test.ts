@@ -4,6 +4,7 @@ import type { AppState } from './store'
 import { DEFAULT_RULES } from './engine/types'
 import type { StateCallback } from './engine/worker-client'
 import { DARK_THEME_COLORS, LIGHT_THEME_COLORS } from './renderer/themes'
+import { SnapshotHistory } from './engine/snapshot-history'
 
 function getStore(): AppState {
   return appStore.getState()
@@ -21,7 +22,10 @@ function resetStore() {
     themeColors: DARK_THEME_COLORS,
     worker: null,
     pastePreviewCells: null,
-  })
+    snapshots: [],
+    canRewind: false,
+    _snapshotHistory: new SnapshotHistory(),
+  } as Partial<AppState> as never)
 }
 
 describe('appStore — initial state', () => {
@@ -397,6 +401,120 @@ describe('appStore — copyToClipboard', () => {
     ).resolves.not.toThrow()
 
     vi.unstubAllGlobals()
+  })
+})
+
+describe('appStore — snapshot history', () => {
+  beforeEach(resetStore)
+
+  it('starts with no snapshots', () => {
+    const s = getStore()
+    expect(s.snapshots).toHaveLength(0)
+    expect(s.canRewind).toBe(false)
+  })
+
+  it('takeSnapshot captures current generation and cells', async () => {
+    const cells = [
+      { x: 0, y: 0 },
+      { x: 1, y: 0 },
+    ]
+    const mockWorker = {
+      step: vi.fn(),
+      reset: vi.fn(),
+      setRules: vi.fn(),
+      getCells: vi.fn().mockResolvedValue(cells),
+      setCells: vi.fn(),
+      onState: null,
+    }
+    appStore.setState({ worker: mockWorker as never, generation: 42 })
+    await getStore().takeSnapshot()
+    const s = getStore()
+    expect(s.snapshots).toHaveLength(1)
+    expect(s.snapshots[0]!.generation).toBe(42)
+    expect(s.snapshots[0]!.cells).toEqual(cells)
+    expect(s.canRewind).toBe(true)
+  })
+
+  it('takeSnapshot is a no-op when worker is null', async () => {
+    appStore.setState({ worker: null })
+    await getStore().takeSnapshot()
+    expect(getStore().snapshots).toHaveLength(0)
+  })
+
+  it('rewindTo restores cells and generation, pauses, and trims history', async () => {
+    const cells0 = [{ x: 0, y: 0 }]
+    const cells1 = [{ x: 1, y: 0 }]
+    const cells2 = [{ x: 2, y: 0 }]
+    const mockWorker = {
+      step: vi.fn(),
+      reset: vi.fn(),
+      setRules: vi.fn(),
+      getCells: vi
+        .fn()
+        .mockResolvedValueOnce(cells0)
+        .mockResolvedValueOnce(cells1)
+        .mockResolvedValueOnce(cells2),
+      setCells: vi.fn(),
+      onState: null,
+    }
+    appStore.setState({ worker: mockWorker as never, generation: 0 })
+    await getStore().takeSnapshot()
+    appStore.setState({ generation: 50 })
+    await getStore().takeSnapshot()
+    appStore.setState({ generation: 100 })
+    await getStore().takeSnapshot()
+
+    expect(getStore().snapshots).toHaveLength(3)
+
+    // Rewind to index 1 (generation 50)
+    appStore.setState({ isRunning: true })
+    getStore().rewindTo(1)
+
+    const s = getStore()
+    expect(s.isRunning).toBe(false)
+    expect(s.generation).toBe(50)
+    expect(mockWorker.setCells).toHaveBeenCalledWith(cells1)
+    // Snapshots after index 1 are removed; index 1 itself is also removed
+    // (only snapshots before the restored point remain)
+    expect(s.snapshots).toHaveLength(1)
+    expect(s.snapshots[0]!.generation).toBe(0)
+  })
+
+  it('rewindTo is a no-op when worker is null', () => {
+    appStore.setState({ worker: null })
+    expect(() => getStore().rewindTo(0)).not.toThrow()
+  })
+
+  it('rewindTo is a no-op for invalid index', async () => {
+    const mockWorker = {
+      step: vi.fn(),
+      reset: vi.fn(),
+      setRules: vi.fn(),
+      getCells: vi.fn().mockResolvedValue([]),
+      setCells: vi.fn(),
+      onState: null,
+    }
+    appStore.setState({ worker: mockWorker as never, generation: 5 })
+    await getStore().takeSnapshot()
+    getStore().rewindTo(99)
+    expect(mockWorker.setCells).not.toHaveBeenCalled()
+  })
+
+  it('reset() clears snapshot history', async () => {
+    const mockWorker = {
+      step: vi.fn(),
+      reset: vi.fn(),
+      setRules: vi.fn(),
+      getCells: vi.fn().mockResolvedValue([{ x: 0, y: 0 }]),
+      setCells: vi.fn(),
+      onState: null,
+    }
+    appStore.setState({ worker: mockWorker as never, generation: 10 })
+    await getStore().takeSnapshot()
+    expect(getStore().snapshots).toHaveLength(1)
+    getStore().reset()
+    expect(getStore().snapshots).toHaveLength(0)
+    expect(getStore().canRewind).toBe(false)
   })
 })
 
