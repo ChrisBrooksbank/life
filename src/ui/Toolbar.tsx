@@ -13,6 +13,7 @@ const TOOLS: ToolConfig[] = [
   { id: 'eraser', label: '⌫', title: 'Eraser — remove cells' },
   { id: 'line', label: '╱', title: 'Line — draw straight lines' },
   { id: 'rect', label: '▭', title: 'Rectangle — draw rectangles' },
+  { id: 'ellipse', label: '◯', title: 'Ellipse — draw ellipses' },
 ]
 
 /** Toolbar for selecting the active drawing tool. */
