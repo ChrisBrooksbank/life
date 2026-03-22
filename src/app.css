@@ -532,6 +532,213 @@ body,
   }
 }
 
+/* ── Settings panel ───────────────────────────────────────────────────────── */
+
+.app__settings-toggle {
+  height: 36px;
+  padding: 0 14px;
+  background: var(--color-btn-bg);
+  border: 1px solid var(--color-btn-border);
+  border-radius: 4px;
+  color: var(--color-text);
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+  transition:
+    background 120ms,
+    border-color 120ms;
+}
+
+.app__settings-toggle:hover {
+  background: var(--color-btn-bg-hover);
+  border-color: var(--color-btn-border-hover);
+}
+
+.app__settings-toggle[aria-pressed='true'] {
+  background: var(--color-btn-active-bg);
+  border-color: var(--color-btn-active-border);
+}
+
+.settings-panel {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 60px;
+  width: 280px;
+  background: var(--color-panel-bg);
+  border-left: 1px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+  z-index: 20;
+  overflow: hidden;
+}
+
+.settings-panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px 8px;
+  border-bottom: 1px solid var(--color-border);
+  flex-shrink: 0;
+}
+
+.settings-panel__title {
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.settings-panel__close {
+  width: 28px;
+  height: 28px;
+  background: none;
+  border: none;
+  color: var(--color-text);
+  cursor: pointer;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  opacity: 0.7;
+  transition: opacity 120ms;
+}
+
+.settings-panel__close:hover {
+  opacity: 1;
+  background: var(--color-btn-bg-hover);
+}
+
+.settings-panel__body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 0;
+}
+
+.settings-panel__section {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.settings-panel__section:last-child {
+  border-bottom: none;
+}
+
+.settings-panel__section-title {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-speed-value);
+  margin-bottom: 8px;
+}
+
+.settings-panel__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 4px 0;
+  cursor: default;
+}
+
+.settings-panel__label {
+  font-size: 13px;
+}
+
+.settings-panel__select {
+  background: var(--color-btn-bg);
+  border: 1px solid var(--color-btn-border);
+  border-radius: 4px;
+  color: var(--color-text);
+  font-size: 12px;
+  font-family: inherit;
+  padding: 3px 6px;
+  cursor: pointer;
+}
+
+.settings-panel__checkbox {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--color-accent);
+  cursor: pointer;
+}
+
+.settings-panel__color {
+  width: 36px;
+  height: 28px;
+  padding: 2px;
+  background: var(--color-btn-bg);
+  border: 1px solid var(--color-btn-border);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.settings-panel__reset {
+  margin-top: 6px;
+  width: 100%;
+  padding: 5px 10px;
+  background: var(--color-btn-bg);
+  border: 1px solid var(--color-btn-border);
+  border-radius: 4px;
+  color: var(--color-text);
+  font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
+  transition:
+    background 120ms,
+    border-color 120ms;
+}
+
+.settings-panel__reset:hover {
+  background: var(--color-btn-bg-hover);
+  border-color: var(--color-btn-border-hover);
+}
+
+.settings-panel__shortcuts {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.settings-panel__shortcut {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 2px 0;
+}
+
+.settings-panel__kbd {
+  display: inline-block;
+  min-width: 88px;
+  padding: 2px 6px;
+  background: var(--color-btn-bg);
+  border: 1px solid var(--color-btn-border);
+  border-radius: 3px;
+  font-size: 11px;
+  font-family: inherit;
+  white-space: nowrap;
+  text-align: center;
+}
+
+.settings-panel__shortcut-desc {
+  font-size: 12px;
+  color: var(--color-text);
+}
+
+@media (max-width: 639px) {
+  .settings-panel {
+    top: 48px;
+    right: 0;
+    left: 0;
+    width: auto;
+    border-left: none;
+    border-bottom: 1px solid var(--color-border);
+    bottom: 56px;
+  }
+}
+
 /* ── Visible focus indicators ─────────────────────────────────────────────── */
 
 :focus-visible {

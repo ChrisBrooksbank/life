@@ -11,10 +11,12 @@ import { useKeyboardShortcuts } from './ui/useKeyboardShortcuts'
 import { downloadCanvasAsPng } from './patterns/screenshot'
 import { startRecording } from './patterns/video-export'
 import type { RecordingSession } from './patterns/video-export'
+import { SettingsPanel } from './ui/SettingsPanel'
 
 export function App() {
   const [theme, setTheme] = useState(() => appStore.getState().theme)
   const [libraryOpen, setLibraryOpen] = useState(false)
+  const [settingsOpen, setSettingsOpen] = useState(false)
   const [isRecording, setIsRecording] = useState(false)
   const recordingSessionRef = useRef<RecordingSession | null>(null)
   const isDragging = useFileDrop()
@@ -49,6 +51,9 @@ export function App() {
 
       {/* Pattern library sidebar */}
       {libraryOpen && <PatternLibrary onClose={() => setLibraryOpen(false)} />}
+
+      {/* Settings panel */}
+      {settingsOpen && <SettingsPanel onClose={() => setSettingsOpen(false)} />}
 
       {/* HUD overlay — real-time stats */}
       <aside class="app__hud" aria-label="Simulation statistics" aria-live="polite">
@@ -111,6 +116,16 @@ export function App() {
           {isRecording ? '⏹' : '⏺'}
         </button>
         <ThemeToggle />
+        <button
+          class="app__settings-toggle"
+          type="button"
+          onClick={() => setSettingsOpen((o) => !o)}
+          aria-pressed={settingsOpen}
+          aria-label={settingsOpen ? 'Close settings' : 'Open settings'}
+          title="Settings"
+        >
+          ⚙
+        </button>
       </footer>
     </div>
   )

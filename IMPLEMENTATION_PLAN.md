@@ -104,7 +104,7 @@ src/
 - [x] Touch support: draw with finger, two-finger pan (spec: ui-controls.md)
 - [x] PNG screenshot export of current view (spec: pattern-library.md)
 - [x] Animated GIF/WebM export of simulation (spec: pattern-library.md)
-- [ ] Settings panel: theme, grid toggle, colors, key bindings (spec: ui-controls.md)
+- [x] Settings panel: theme, grid toggle, colors, key bindings (spec: ui-controls.md)
 - [ ] Keyboard shortcut cheat sheet (press `?`) (spec: ui-controls.md)
 - [ ] Full keyboard navigation with visible focus indicators (spec: ui-controls.md)
 - [ ] ARIA labels on all controls + screen reader announcements (spec: ui-controls.md)

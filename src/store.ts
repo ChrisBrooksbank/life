@@ -119,6 +119,10 @@ export interface AppState {
   ageColorMode: boolean
   setAgeColorMode: (enabled: boolean) => void
 
+  /** Whether to show the grid overlay on the canvas. */
+  showGrid: boolean
+  setShowGrid: (show: boolean) => void
+
   // Internal: allows overriding which cells are copied (e.g. selection)
   _clipboardCopySource: (() => Cell[] | null) | null
   _setClipboardCopySource: (fn: (() => Cell[] | null) | null) => void
@@ -268,6 +272,12 @@ export const appStore = createStore<AppState>()((set, get) => ({
 
   setAgeColorMode: (enabled) => {
     set({ ageColorMode: enabled })
+  },
+
+  showGrid: false,
+
+  setShowGrid: (show) => {
+    set({ showGrid: show })
   },
 
   _clipboardCopySource: null,
