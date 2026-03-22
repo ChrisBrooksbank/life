@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'preact/hooks'
+import { useEffect, useRef, useState } from 'preact/hooks'
 import './app.css'
 import { appStore } from './store'
 import { Controls } from './ui/Controls'
@@ -9,10 +9,14 @@ import { ThemeToggle } from './ui/ThemeToggle'
 import { useFileDrop } from './ui/useFileDrop'
 import { useKeyboardShortcuts } from './ui/useKeyboardShortcuts'
 import { downloadCanvasAsPng } from './patterns/screenshot'
+import { startRecording } from './patterns/video-export'
+import type { RecordingSession } from './patterns/video-export'
 
 export function App() {
   const [theme, setTheme] = useState(() => appStore.getState().theme)
   const [libraryOpen, setLibraryOpen] = useState(false)
+  const [isRecording, setIsRecording] = useState(false)
+  const recordingSessionRef = useRef<RecordingSession | null>(null)
   const isDragging = useFileDrop()
 
   useKeyboardShortcuts()
@@ -80,6 +84,31 @@ export function App() {
           title="Export PNG screenshot"
         >
           📷
+        </button>
+        <button
+          class="app__record-btn"
+          type="button"
+          onClick={() => {
+            if (isRecording) {
+              recordingSessionRef.current?.stop()
+              recordingSessionRef.current = null
+              setIsRecording(false)
+            } else {
+              const canvas = document.getElementById('life-canvas') as HTMLCanvasElement | null
+              if (!canvas) return
+              const gen = appStore.getState().generation
+              const session = startRecording(canvas, { filename: `life-gen-${gen}` })
+              if (session) {
+                recordingSessionRef.current = session
+                setIsRecording(true)
+              }
+            }
+          }}
+          aria-label={isRecording ? 'Stop recording' : 'Record animation as WebM'}
+          aria-pressed={isRecording}
+          title={isRecording ? 'Stop recording' : 'Record animation as WebM'}
+        >
+          {isRecording ? '⏹' : '⏺'}
         </button>
         <ThemeToggle />
       </footer>
