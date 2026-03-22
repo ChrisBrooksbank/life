@@ -53,7 +53,7 @@ describe('Toolbar — rendering', () => {
 
   it('renders a button for each tool', () => {
     const buttons = container.querySelectorAll('button')
-    expect(buttons.length).toBe(5)
+    expect(buttons.length).toBe(6)
   })
 
   it('renders pencil button', () => {

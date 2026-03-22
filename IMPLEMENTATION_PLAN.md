@@ -75,7 +75,7 @@ src/
 - [x] Line drawing tool (spec: editor.md)
 - [x] Rectangle drawing tool (filled or outline) (spec: editor.md)
 - [x] Circle/ellipse drawing tool (filled or outline) (spec: editor.md)
-- [ ] Fill tool (flood fill for enclosed regions) (spec: editor.md)
+- [x] Fill tool (flood fill for enclosed regions) (spec: editor.md)
 - [ ] Undo/redo stack: Ctrl+Z / Ctrl+Shift+Z for all editor operations (spec: editor.md)
 - [ ] Rectangular selection: move, copy, cut, delete (spec: editor.md)
 - [ ] Freeform lasso selection (spec: editor.md)

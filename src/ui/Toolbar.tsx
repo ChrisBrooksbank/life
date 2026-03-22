@@ -14,6 +14,7 @@ const TOOLS: ToolConfig[] = [
   { id: 'line', label: '╱', title: 'Line — draw straight lines' },
   { id: 'rect', label: '▭', title: 'Rectangle — draw rectangles' },
   { id: 'ellipse', label: '◯', title: 'Ellipse — draw ellipses' },
+  { id: 'fill', label: '⬛', title: 'Fill — flood fill enclosed region' },
 ]
 
 /** Toolbar for selecting the active drawing tool. */

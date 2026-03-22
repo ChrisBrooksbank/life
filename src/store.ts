@@ -5,7 +5,7 @@ import type { WorkerClient } from './engine/worker-client'
 import { THEME_COLORS } from './renderer/themes'
 import type { Theme, ThemeColors } from './renderer/themes'
 
-export type DrawingTool = 'pencil' | 'eraser' | 'line' | 'rect' | 'ellipse'
+export type DrawingTool = 'pencil' | 'eraser' | 'line' | 'rect' | 'ellipse' | 'fill'
 
 export interface AppState {
   // Simulation state
