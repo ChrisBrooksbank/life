@@ -6,11 +6,13 @@ import { HUD } from './ui/HUD'
 import { PatternLibrary } from './ui/PatternLibrary'
 import { PerfMetrics } from './ui/PerfMetrics'
 import { ThemeToggle } from './ui/ThemeToggle'
+import { useFileDrop } from './ui/useFileDrop'
 import { useKeyboardShortcuts } from './ui/useKeyboardShortcuts'
 
 export function App() {
   const [theme, setTheme] = useState(() => appStore.getState().theme)
   const [libraryOpen, setLibraryOpen] = useState(false)
+  const isDragging = useFileDrop()
 
   useKeyboardShortcuts()
 
@@ -32,6 +34,13 @@ export function App() {
       <nav class="app__toolbar" aria-label="Drawing tools">
         {/* Tool buttons added in later tasks */}
       </nav>
+
+      {/* Drag-and-drop overlay */}
+      {isDragging && (
+        <div class="app__drop-overlay" aria-hidden="true">
+          Drop .rle, .cells, or .lif file to import
+        </div>
+      )}
 
       {/* Pattern library sidebar */}
       {libraryOpen && <PatternLibrary onClose={() => setLibraryOpen(false)} />}
