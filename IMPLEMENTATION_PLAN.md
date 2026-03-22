@@ -49,7 +49,7 @@ src/
 - [x] Naive simulation engine (Set<string> storage, B3/S23, unbounded grid) (spec: simulation-engine.md)
 - [x] Configurable rules via Birth/Survival strings (default B3/S23) (spec: simulation-engine.md)
 - [x] Web Worker wrapper: off-main-thread simulation with message protocol (spec: simulation-engine.md)
-- [ ] WebGL2 renderer: GLSL shaders + instanced quad pipeline for cell drawing (spec: rendering.md)
+- [x] WebGL2 renderer: GLSL shaders + instanced quad pipeline for cell drawing (spec: rendering.md)
 - [ ] Camera system: zoom, pan, screen↔world coordinate transforms (spec: rendering.md)
 - [ ] Mouse wheel zoom + inertial pan + pinch-to-zoom gesture support (spec: rendering.md)
 - [ ] Zustand store for global app state (spec: ui-controls.md)
