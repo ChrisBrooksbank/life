@@ -1,10 +1,11 @@
 import { createStore } from 'zustand/vanilla'
 import { DEFAULT_RULES } from './engine/types'
-import type { Rules } from './engine/types'
+import type { Rules, Cell } from './engine/types'
 import type { WorkerClient } from './engine/worker-client'
 import { THEME_COLORS } from './renderer/themes'
 import type { Theme, ThemeColors } from './renderer/themes'
 import { historyManager } from './editor/history'
+import { encodeRle, decodeRle } from './patterns/rle'
 
 export type DrawingTool =
   | 'pencil'
@@ -59,6 +60,21 @@ export interface AppState {
   setThemeColors: (colors: Partial<ThemeColors>) => void
   /** Called by the worker's onState callback to sync generation/population. */
   updateSimState: (generation: number, population: number) => void
+  /**
+   * Copy all live cells to the system clipboard in RLE format.
+   * No-op if the worker is unavailable or clipboard access is denied.
+   */
+  copyToClipboard: () => void
+  /**
+   * Read RLE from the system clipboard and merge the decoded cells into the grid.
+   * Decoded cells are placed at their encoded coordinates (origin 0, 0).
+   * No-op if the worker is unavailable, clipboard is empty, or content is invalid.
+   */
+  pasteFromClipboard: () => void
+
+  // Internal: allows overriding which cells are copied (e.g. selection)
+  _clipboardCopySource: (() => Cell[] | null) | null
+  _setClipboardCopySource: (fn: (() => Cell[] | null) | null) => void
 }
 
 export const appStore = createStore<AppState>()((set, get) => ({
@@ -147,5 +163,62 @@ export const appStore = createStore<AppState>()((set, get) => ({
 
   updateSimState: (generation, population) => {
     set({ generation, population })
+  },
+
+  _clipboardCopySource: null,
+
+  _setClipboardCopySource: (fn) => {
+    set({ _clipboardCopySource: fn })
+  },
+
+  copyToClipboard: () => {
+    const { worker, _clipboardCopySource } = get()
+
+    // Try the registered selection source first
+    if (_clipboardCopySource) {
+      const selected = _clipboardCopySource()
+      if (selected !== null) {
+        const rle = encodeRle(selected)
+        navigator.clipboard.writeText(rle).catch(() => {
+          /* clipboard unavailable */
+        })
+        return
+      }
+    }
+
+    // Fall back to all live cells
+    if (!worker) return
+    worker.getCells().then((cells) => {
+      const rle = encodeRle(cells)
+      navigator.clipboard.writeText(rle).catch(() => {
+        /* clipboard unavailable */
+      })
+    })
+  },
+
+  pasteFromClipboard: () => {
+    const { worker } = get()
+    if (!worker) return
+    navigator.clipboard
+      .readText()
+      .then((text) => {
+        const trimmed = text.trim()
+        if (!trimmed) return
+        const pasteCells = decodeRle(trimmed)
+        if (pasteCells.length === 0) return
+        return worker.getCells().then((existing) => {
+          const existingSet = new Set(existing.map((c) => `${c.x},${c.y}`))
+          const merged = [...existing]
+          for (const c of pasteCells) {
+            if (!existingSet.has(`${c.x},${c.y}`)) {
+              merged.push(c)
+            }
+          }
+          worker.setCells(merged)
+        })
+      })
+      .catch(() => {
+        /* clipboard unavailable or invalid content */
+      })
   },
 }))

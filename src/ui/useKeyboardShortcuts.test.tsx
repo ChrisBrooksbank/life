@@ -174,6 +174,45 @@ describe('useKeyboardShortcuts — speed', () => {
   })
 })
 
+describe('useKeyboardShortcuts — clipboard', () => {
+  it('Ctrl+C calls copyToClipboard', () => {
+    const mockWorker = {
+      step: vi.fn(),
+      reset: vi.fn(),
+      setRules: vi.fn(),
+      getCells: vi.fn().mockResolvedValue([]),
+      onState: null,
+    }
+    appStore.setState({ worker: mockWorker as never })
+
+    const copyToClipboard = vi.fn()
+    appStore.setState({ copyToClipboard } as never)
+
+    pressKey('c', { ctrlKey: true })
+    expect(copyToClipboard).toHaveBeenCalled()
+  })
+
+  it('Ctrl+V calls pasteFromClipboard', () => {
+    const pasteFromClipboard = vi.fn()
+    appStore.setState({ pasteFromClipboard } as never)
+
+    pressKey('v', { ctrlKey: true })
+    expect(pasteFromClipboard).toHaveBeenCalled()
+  })
+
+  it('Ctrl+C with Shift does not call copyToClipboard', () => {
+    const copyToClipboard = vi.fn()
+    appStore.setState({ copyToClipboard } as never)
+
+    act(() => {
+      window.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'c', ctrlKey: true, shiftKey: true, bubbles: true }),
+      )
+    })
+    expect(copyToClipboard).not.toHaveBeenCalled()
+  })
+})
+
 describe('useKeyboardShortcuts — suppression', () => {
   it('ignores shortcuts when Ctrl is held', () => {
     pressKey(' ', { ctrlKey: true })

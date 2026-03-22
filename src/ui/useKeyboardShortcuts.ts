@@ -80,6 +80,20 @@ export function useKeyboardShortcuts(): void {
         return
       }
 
+      // Ctrl+C / Cmd+C — copy to clipboard (RLE)
+      if ((e.ctrlKey || e.metaKey) && !e.altKey && !e.shiftKey && e.key === 'c') {
+        e.preventDefault()
+        appStore.getState().copyToClipboard()
+        return
+      }
+
+      // Ctrl+V / Cmd+V — paste from clipboard (RLE)
+      if ((e.ctrlKey || e.metaKey) && !e.altKey && !e.shiftKey && e.key === 'v') {
+        e.preventDefault()
+        appStore.getState().pasteFromClipboard()
+        return
+      }
+
       // Ignore other combinations with modifier keys
       if (e.ctrlKey || e.altKey || e.metaKey) return
 
