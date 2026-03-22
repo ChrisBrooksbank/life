@@ -5,9 +5,12 @@ import { Controls } from './ui/Controls'
 import { HUD } from './ui/HUD'
 import { PerfMetrics } from './ui/PerfMetrics'
 import { ThemeToggle } from './ui/ThemeToggle'
+import { useKeyboardShortcuts } from './ui/useKeyboardShortcuts'
 
 export function App() {
   const [theme, setTheme] = useState(() => appStore.getState().theme)
+
+  useKeyboardShortcuts()
 
   // Keep local theme in sync with store and apply to <html> element
   useEffect(() => {

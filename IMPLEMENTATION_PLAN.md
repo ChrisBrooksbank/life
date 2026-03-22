@@ -71,7 +71,7 @@ src/
 - [x] Performance metrics display: gen/sec, render FPS, memory usage (spec: ui-controls.md)
 - [x] Population sparkline graph over time (spec: ui-controls.md)
 - [x] Toolbar for drawing tool selection (spec: ui-controls.md)
-- [ ] Keyboard shortcuts for all major actions (spec: ui-controls.md)
+- [x] Keyboard shortcuts for all major actions (spec: ui-controls.md)
 - [ ] Line drawing tool (spec: editor.md)
 - [ ] Rectangle drawing tool (filled or outline) (spec: editor.md)
 - [ ] Circle/ellipse drawing tool (filled or outline) (spec: editor.md)
