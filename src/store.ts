@@ -40,6 +40,12 @@ export interface AppState {
    */
   worker: WorkerClient | null
 
+  /**
+   * Cells pending placement in smart-paste preview mode (origin-relative).
+   * Non-null while the user is previewing a paste before committing.
+   */
+  pastePreviewCells: Cell[] | null
+
   // Actions
   setWorker: (worker: WorkerClient) => void
   play: () => void
@@ -66,11 +72,20 @@ export interface AppState {
    */
   copyToClipboard: () => void
   /**
-   * Read RLE from the system clipboard and merge the decoded cells into the grid.
-   * Decoded cells are placed at their encoded coordinates (origin 0, 0).
-   * No-op if the worker is unavailable, clipboard is empty, or content is invalid.
+   * Read RLE from the system clipboard and enter smart-paste preview mode.
+   * Sets pastePreviewCells so a canvas-level paste-preview tool can show a
+   * ghost and place the cells on click.
+   * No-op if clipboard is empty or content is invalid.
    */
   pasteFromClipboard: () => void
+  /**
+   * Enter smart-paste preview mode with the given origin-relative cells.
+   * A canvas-level paste-preview tool should watch pastePreviewCells and
+   * instantiate createPastePreview when it becomes non-null.
+   */
+  startPastePreview: (cells: Cell[]) => void
+  /** Cancel an in-progress smart-paste preview. */
+  cancelPastePreview: () => void
 
   // Internal: allows overriding which cells are copied (e.g. selection)
   _clipboardCopySource: (() => Cell[] | null) | null
@@ -93,6 +108,7 @@ export const appStore = createStore<AppState>()((set, get) => ({
   themeColors: THEME_COLORS.dark,
 
   worker: null,
+  pastePreviewCells: null,
 
   setWorker: (worker) => {
     worker.onState = (generation, population) => {
@@ -197,8 +213,6 @@ export const appStore = createStore<AppState>()((set, get) => ({
   },
 
   pasteFromClipboard: () => {
-    const { worker } = get()
-    if (!worker) return
     navigator.clipboard
       .readText()
       .then((text) => {
@@ -206,19 +220,18 @@ export const appStore = createStore<AppState>()((set, get) => ({
         if (!trimmed) return
         const pasteCells = decodeRle(trimmed)
         if (pasteCells.length === 0) return
-        return worker.getCells().then((existing) => {
-          const existingSet = new Set(existing.map((c) => `${c.x},${c.y}`))
-          const merged = [...existing]
-          for (const c of pasteCells) {
-            if (!existingSet.has(`${c.x},${c.y}`)) {
-              merged.push(c)
-            }
-          }
-          worker.setCells(merged)
-        })
+        get().startPastePreview(pasteCells)
       })
       .catch(() => {
         /* clipboard unavailable or invalid content */
       })
+  },
+
+  startPastePreview: (cells: Cell[]) => {
+    set({ pastePreviewCells: cells })
+  },
+
+  cancelPastePreview: () => {
+    set({ pastePreviewCells: null })
   },
 }))

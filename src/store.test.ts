@@ -20,6 +20,7 @@ function resetStore() {
     theme: 'dark',
     themeColors: DARK_THEME_COLORS,
     worker: null,
+    pastePreviewCells: null,
   })
 }
 
@@ -196,6 +197,84 @@ describe('appStore — updateSimState', () => {
     const s = getStore()
     expect(s.generation).toBe(100)
     expect(s.population).toBe(500)
+  })
+})
+
+describe('appStore — pastePreviewCells', () => {
+  beforeEach(resetStore)
+
+  it('starts as null (no active preview)', () => {
+    expect(getStore().pastePreviewCells).toBeNull()
+  })
+
+  it('startPastePreview sets pastePreviewCells', () => {
+    const cells = [
+      { x: 0, y: 0 },
+      { x: 1, y: 0 },
+    ]
+    getStore().startPastePreview(cells)
+    expect(getStore().pastePreviewCells).toEqual(cells)
+  })
+
+  it('cancelPastePreview clears pastePreviewCells', () => {
+    getStore().startPastePreview([{ x: 0, y: 0 }])
+    getStore().cancelPastePreview()
+    expect(getStore().pastePreviewCells).toBeNull()
+  })
+})
+
+describe('appStore — pasteFromClipboard (smart paste)', () => {
+  beforeEach(resetStore)
+
+  it('pasteFromClipboard enters preview mode via startPastePreview', async () => {
+    // Provide a valid RLE string on the clipboard
+    const rle = 'x = 2, y = 1, rule = B3/S23\noo!'
+    vi.stubGlobal('navigator', {
+      clipboard: {
+        readText: vi.fn().mockResolvedValue(rle),
+      },
+    })
+
+    getStore().pasteFromClipboard()
+    await Promise.resolve()
+    await Promise.resolve()
+
+    expect(getStore().pastePreviewCells).not.toBeNull()
+    expect(getStore().pastePreviewCells).toHaveLength(2)
+
+    vi.unstubAllGlobals()
+  })
+
+  it('pasteFromClipboard does nothing when clipboard is empty', async () => {
+    vi.stubGlobal('navigator', {
+      clipboard: {
+        readText: vi.fn().mockResolvedValue(''),
+      },
+    })
+
+    getStore().pasteFromClipboard()
+    await Promise.resolve()
+    await Promise.resolve()
+
+    expect(getStore().pastePreviewCells).toBeNull()
+
+    vi.unstubAllGlobals()
+  })
+
+  it('pasteFromClipboard does nothing when RLE decodes to no cells', async () => {
+    vi.stubGlobal('navigator', {
+      clipboard: {
+        readText: vi.fn().mockResolvedValue('x = 0, y = 0, rule = B3/S23\n!'),
+      },
+    })
+
+    getStore().pasteFromClipboard()
+    await Promise.resolve()
+    await Promise.resolve()
+
+    expect(getStore().pastePreviewCells).toBeNull()
+
+    vi.unstubAllGlobals()
   })
 })
 
