@@ -6,7 +6,7 @@ import { THEME_COLORS } from './renderer/themes'
 import type { Theme, ThemeColors } from './renderer/themes'
 import { historyManager } from './editor/history'
 
-export type DrawingTool = 'pencil' | 'eraser' | 'line' | 'rect' | 'ellipse' | 'fill'
+export type DrawingTool = 'pencil' | 'eraser' | 'line' | 'rect' | 'ellipse' | 'fill' | 'select'
 
 export interface AppState {
   // Simulation state
