@@ -2,6 +2,7 @@ import { useEffect, useState } from 'preact/hooks'
 import './app.css'
 import { appStore } from './store'
 import { Controls } from './ui/Controls'
+import { HUD } from './ui/HUD'
 import { ThemeToggle } from './ui/ThemeToggle'
 
 export function App() {
@@ -28,7 +29,7 @@ export function App() {
 
       {/* HUD overlay — real-time stats */}
       <aside class="app__hud" aria-label="Simulation statistics" aria-live="polite">
-        {/* Generation / population counters added in later tasks */}
+        <HUD />
       </aside>
 
       {/* Playback controls bar */}

@@ -237,6 +237,39 @@ body,
   border-color: var(--color-btn-border-hover);
 }
 
+/* ── HUD stats list ───────────────────────────────────────────────────────── */
+
+.hud {
+  list-style: none;
+}
+
+.hud__row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.hud__label {
+  color: var(--color-speed-value);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.hud__value {
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.hud__value--births {
+  color: #4caf50;
+}
+
+.hud__value--deaths {
+  color: #f44336;
+}
+
 /* ── Visible focus indicators ─────────────────────────────────────────────── */
 
 :focus-visible {
