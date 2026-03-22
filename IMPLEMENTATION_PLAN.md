@@ -100,7 +100,7 @@ src/
 - [x] Generation jump input: type number, leap via HashLife (spec: ui-controls.md)
 - [x] Multi-scale rendering: density heatmaps at low zoom, individual cells at high zoom (spec: rendering.md)
 - [x] Cell age coloring mode: heat map based on generations alive (spec: rendering.md)
-- [ ] WebGPU progressive enhancement with feature detection (spec: rendering.md)
+- [x] WebGPU progressive enhancement with feature detection (spec: rendering.md)
 - [ ] Touch support: draw with finger, two-finger pan (spec: ui-controls.md)
 - [ ] PNG screenshot export of current view (spec: pattern-library.md)
 - [ ] Animated GIF/WebM export of simulation (spec: pattern-library.md)
