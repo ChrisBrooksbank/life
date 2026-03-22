@@ -10,6 +10,8 @@ export interface LineToolOptions {
   getCells: () => Promise<Cell[]>
   /** Replace all live cells in the simulation. */
   setCells: (cells: Cell[]) => void
+  /** Called once per stroke with the cell snapshot taken before the first change. */
+  onBeforeChange?: (snapshot: Cell[]) => void
 }
 
 function cellKey(x: number, y: number): string {
@@ -68,7 +70,7 @@ export function bresenham(
  * Returns a dispose function that removes all event listeners.
  */
 export function createLineTool(canvas: HTMLCanvasElement, options: LineToolOptions): () => void {
-  const { getCamera, getActiveTool, getCells, setCells } = options
+  const { getCamera, getActiveTool, getCells, setCells, onBeforeChange } = options
 
   let isDrawing = false
   let startCell: { x: number; y: number } | null = null
@@ -114,6 +116,7 @@ export function createLineTool(canvas: HTMLCanvasElement, options: LineToolOptio
     getCells().then((cells) => {
       if (!isDrawing) return // stroke was cancelled before cells arrived
 
+      onBeforeChange?.(cells)
       originalCells = new Set(cells.map((c) => cellKey(c.x, c.y)))
 
       // Apply the buffered endpoint (latest position seen so far)

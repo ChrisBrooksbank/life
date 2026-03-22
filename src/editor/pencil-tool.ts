@@ -10,6 +10,8 @@ export interface PencilToolOptions {
   getCells: () => Promise<Cell[]>
   /** Replace all live cells in the simulation. */
   setCells: (cells: Cell[]) => void
+  /** Called once per stroke with the cell snapshot taken before the first change. */
+  onBeforeChange?: (snapshot: Cell[]) => void
 }
 
 function cellKey(x: number, y: number): string {
@@ -37,7 +39,7 @@ export function createPencilTool(
   canvas: HTMLCanvasElement,
   options: PencilToolOptions,
 ): () => void {
-  const { getCamera, getActiveTool, getCells, setCells } = options
+  const { getCamera, getActiveTool, getCells, setCells, onBeforeChange } = options
 
   type StrokeMode = 'draw' | 'erase'
 
@@ -94,6 +96,7 @@ export function createPencilTool(
     getCells().then((cells) => {
       if (!isDrawing) return // stroke was cancelled before cells arrived
 
+      onBeforeChange?.(cells)
       currentCells = new Set(cells.map((c) => cellKey(c.x, c.y)))
 
       // Determine draw vs erase from the first clicked position

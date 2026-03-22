@@ -64,9 +64,24 @@ function isInputFocused(): boolean {
 export function useKeyboardShortcuts(): void {
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent): void {
-      // Ignore when modifier keys are held (except shift for + key)
-      if (e.ctrlKey || e.altKey || e.metaKey) return
       if (isInputFocused()) return
+
+      // Ctrl+Z / Cmd+Z — undo
+      if ((e.ctrlKey || e.metaKey) && !e.altKey && e.key === 'z' && !e.shiftKey) {
+        e.preventDefault()
+        appStore.getState().undo()
+        return
+      }
+
+      // Ctrl+Shift+Z / Cmd+Shift+Z — redo
+      if ((e.ctrlKey || e.metaKey) && !e.altKey && e.key === 'z' && e.shiftKey) {
+        e.preventDefault()
+        appStore.getState().redo()
+        return
+      }
+
+      // Ignore other combinations with modifier keys
+      if (e.ctrlKey || e.altKey || e.metaKey) return
 
       const handler = SHORTCUTS[e.key]
       if (handler) {

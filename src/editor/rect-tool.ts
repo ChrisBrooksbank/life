@@ -12,6 +12,8 @@ export interface RectToolOptions {
   getCells: () => Promise<Cell[]>
   /** Replace all live cells in the simulation. */
   setCells: (cells: Cell[]) => void
+  /** Called once per stroke with the cell snapshot taken before the first change. */
+  onBeforeChange?: (snapshot: Cell[]) => void
 }
 
 function cellKey(x: number, y: number): string {
@@ -89,7 +91,7 @@ export function rectFilled(
  * Returns a dispose function that removes all event listeners.
  */
 export function createRectTool(canvas: HTMLCanvasElement, options: RectToolOptions): () => void {
-  const { getCamera, getActiveTool, getRectFilled, getCells, setCells } = options
+  const { getCamera, getActiveTool, getRectFilled, getCells, setCells, onBeforeChange } = options
 
   let isDrawing = false
   let startCell: { x: number; y: number } | null = null
@@ -137,6 +139,7 @@ export function createRectTool(canvas: HTMLCanvasElement, options: RectToolOptio
     getCells().then((cells) => {
       if (!isDrawing) return // stroke was cancelled before cells arrived
 
+      onBeforeChange?.(cells)
       originalCells = new Set(cells.map((c) => cellKey(c.x, c.y)))
 
       // Apply the buffered endpoint (latest position seen so far)

@@ -4,6 +4,7 @@ import type { Rules } from './engine/types'
 import type { WorkerClient } from './engine/worker-client'
 import { THEME_COLORS } from './renderer/themes'
 import type { Theme, ThemeColors } from './renderer/themes'
+import { historyManager } from './editor/history'
 
 export type DrawingTool = 'pencil' | 'eraser' | 'line' | 'rect' | 'ellipse' | 'fill'
 
@@ -37,6 +38,10 @@ export interface AppState {
   /** Advance by one generation. */
   step: () => void
   reset: () => void
+  /** Undo the last editor operation (Ctrl+Z). */
+  undo: () => void
+  /** Redo the last undone editor operation (Ctrl+Shift+Z). */
+  redo: () => void
   setSpeed: (speed: number) => void
   setActiveTool: (tool: DrawingTool) => void
   setRules: (rules: Rules) => void
@@ -88,7 +93,26 @@ export const appStore = createStore<AppState>()((set, get) => ({
   reset: () => {
     const { worker } = get()
     worker?.reset()
+    historyManager.clear()
     set({ isRunning: false, generation: 0, population: 0 })
+  },
+
+  undo: () => {
+    const { worker } = get()
+    if (!worker) return
+    historyManager.undo(
+      () => worker.getCells(),
+      (cells) => worker.setCells(cells),
+    )
+  },
+
+  redo: () => {
+    const { worker } = get()
+    if (!worker) return
+    historyManager.redo(
+      () => worker.getCells(),
+      (cells) => worker.setCells(cells),
+    )
   },
 
   setSpeed: (speed) => {

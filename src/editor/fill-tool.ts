@@ -10,6 +10,8 @@ export interface FillToolOptions {
   getCells: () => Promise<Cell[]>
   /** Replace all live cells in the simulation. */
   setCells: (cells: Cell[]) => void
+  /** Called before a fill is applied, with the cell snapshot at that moment. */
+  onBeforeChange?: (snapshot: Cell[]) => void
 }
 
 function cellKey(x: number, y: number): string {
@@ -105,7 +107,7 @@ export function floodFill(
  * Returns a dispose function that removes all event listeners.
  */
 export function createFillTool(canvas: HTMLCanvasElement, options: FillToolOptions): () => void {
-  const { getCamera, getActiveTool, getCells, setCells } = options
+  const { getCamera, getActiveTool, getCells, setCells, onBeforeChange } = options
 
   function screenToCell(clientX: number, clientY: number): { x: number; y: number } {
     const rect = canvas.getBoundingClientRect()
@@ -122,6 +124,8 @@ export function createFillTool(canvas: HTMLCanvasElement, options: FillToolOptio
       const liveCells = new Set(cells.map((c) => cellKey(c.x, c.y)))
       const result = floodFill(x, y, liveCells)
       if (result === null) return // unbounded region — no-op
+
+      onBeforeChange?.(cells)
 
       const newCells: Cell[] = []
       for (const key of result) {
