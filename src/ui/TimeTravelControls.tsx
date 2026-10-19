@@ -16,9 +16,17 @@ export function TimeTravelControls() {
   const [canRewind, setCanRewind] = useState(() => appStore.getState().canRewind)
 
   useEffect(() => {
+    let prevSnapshots = appStore.getState().snapshots
+    let prevCanRewind = appStore.getState().canRewind
     return appStore.subscribe((s) => {
-      setSnapshots(s.snapshots)
-      setCanRewind(s.canRewind)
+      if (s.snapshots !== prevSnapshots) {
+        prevSnapshots = s.snapshots
+        setSnapshots(s.snapshots)
+      }
+      if (s.canRewind !== prevCanRewind) {
+        prevCanRewind = s.canRewind
+        setCanRewind(s.canRewind)
+      }
     })
   }, [])
 
@@ -34,16 +42,13 @@ export function TimeTravelControls() {
   }
 
   function handleRewind() {
-    // Step back one snapshot (the most recent one that was recorded before
-    // the current state; rewindTo trims history so the current latest minus
-    // one is the logical predecessor).
     appStore.getState().rewindTo(lastIndex)
   }
 
   return (
     <div class="time-travel" role="group" aria-label="Time travel controls">
       <button
-        class="time-travel__btn"
+        class="btn btn--sm time-travel__btn"
         type="button"
         onClick={handleRewind}
         aria-label="Rewind to previous snapshot"

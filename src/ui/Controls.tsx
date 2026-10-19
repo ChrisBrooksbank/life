@@ -68,7 +68,7 @@ export function Controls() {
         Gen {generation}
       </output>
       <button
-        class="controls__btn"
+        class="btn controls__btn"
         type="button"
         onClick={() => (isRunning ? pause() : play())}
         aria-label={isRunning ? 'Pause simulation' : 'Play simulation'}
@@ -77,7 +77,7 @@ export function Controls() {
         {isRunning ? 'Pause' : 'Play'}
       </button>
       <button
-        class="controls__btn"
+        class="btn controls__btn"
         type="button"
         onClick={() => step()}
         aria-label="Step simulation forward one generation"

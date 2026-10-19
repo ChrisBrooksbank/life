@@ -5,10 +5,6 @@ const MAX_POINTS = 100
 const SVG_WIDTH = 200
 const SVG_HEIGHT = 40
 
-/**
- * SVG sparkline displaying population over the last MAX_POINTS generations.
- * Records one data point per generation advance from the store.
- */
 export function PopulationSparkline() {
   const [history, setHistory] = useState<number[]>([])
   const prevGenRef = useRef<number>(appStore.getState().generation)
@@ -18,8 +14,12 @@ export function PopulationSparkline() {
       if (s.generation !== prevGenRef.current) {
         prevGenRef.current = s.generation
         setHistory((prev) => {
-          const next = [...prev, s.population]
-          return next.length > MAX_POINTS ? next.slice(next.length - MAX_POINTS) : next
+          if (prev.length >= MAX_POINTS) {
+            const next = prev.slice(1)
+            next.push(s.population)
+            return next
+          }
+          return [...prev, s.population]
         })
       }
     })

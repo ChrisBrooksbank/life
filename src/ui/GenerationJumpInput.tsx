@@ -39,7 +39,7 @@ export function GenerationJumpInput() {
         />
       </label>
       <button
-        class="gen-jump__btn"
+        class="btn btn--sm gen-jump__btn"
         type="submit"
         aria-label="Jump to target generation"
         disabled={value === '' || isNaN(parseInt(value, 10))}

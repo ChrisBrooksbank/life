@@ -202,6 +202,54 @@ body,
   }
 }
 
+/* ── Shared button base ──────────────────────────────────────────────────── */
+
+.btn {
+  background: var(--color-btn-bg);
+  border: 1px solid var(--color-btn-border);
+  border-radius: 4px;
+  color: var(--color-text);
+  font-family: inherit;
+  cursor: pointer;
+  transition:
+    background 120ms,
+    border-color 120ms;
+}
+
+.btn:hover:not(:disabled) {
+  background: var(--color-btn-bg-hover);
+  border-color: var(--color-btn-border-hover);
+}
+
+.btn:disabled {
+  opacity: 0.38;
+  cursor: not-allowed;
+}
+
+.btn[aria-pressed='true'] {
+  background: var(--color-btn-active-bg);
+  border-color: var(--color-btn-active-border);
+}
+
+/* Icon-style button (square, centered content) */
+.btn--icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  font-size: 16px;
+}
+
+/* Small text button */
+.btn--sm {
+  height: 32px;
+  padding: 0 10px;
+  font-size: 12px;
+}
+
 /* ── Playback control buttons ─────────────────────────────────────────────── */
 
 .controls {
@@ -214,31 +262,7 @@ body,
   height: 36px;
   min-width: 64px;
   padding: 0 14px;
-  background: var(--color-btn-bg);
-  border: 1px solid var(--color-btn-border);
-  border-radius: 4px;
-  color: var(--color-text);
   font-size: 13px;
-  font-family: inherit;
-  cursor: pointer;
-  transition:
-    background 120ms,
-    border-color 120ms;
-}
-
-.controls__btn:hover:not(:disabled) {
-  background: var(--color-btn-bg-hover);
-  border-color: var(--color-btn-border-hover);
-}
-
-.controls__btn:disabled {
-  opacity: 0.38;
-  cursor: not-allowed;
-}
-
-.controls__btn[aria-pressed='true'] {
-  background: var(--color-btn-active-bg);
-  border-color: var(--color-btn-active-border);
 }
 
 /* ── Generation counter ───────────────────────────────────────────────────── */
@@ -310,62 +334,14 @@ body,
 }
 
 .gen-jump__btn {
-  height: 32px;
-  padding: 0 10px;
-  background: var(--color-btn-bg);
-  border: 1px solid var(--color-btn-border);
-  border-radius: 4px;
-  color: var(--color-text);
-  font-size: 12px;
-  font-family: inherit;
-  cursor: pointer;
-  transition:
-    background 120ms,
-    border-color 120ms;
-}
-
-.gen-jump__btn:hover:not(:disabled) {
-  background: var(--color-btn-bg-hover);
-  border-color: var(--color-btn-border-hover);
-}
-
-.gen-jump__btn:disabled {
-  opacity: 0.38;
-  cursor: not-allowed;
+  /* extends .btn .btn--sm via HTML */
 }
 
 /* ── Screenshot / Record buttons ──────────────────────────────────────────── */
 
-.app__screenshot-btn,
-.app__record-btn {
-  height: 36px;
-  width: 36px;
-  padding: 0;
-  background: var(--color-btn-bg);
-  border: 1px solid var(--color-btn-border);
-  border-radius: 4px;
-  color: var(--color-text);
-  font-size: 16px;
-  font-family: inherit;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  transition:
-    background 120ms,
-    border-color 120ms;
-}
-
-.app__screenshot-btn:hover,
-.app__record-btn:hover {
-  background: var(--color-btn-bg-hover);
-  border-color: var(--color-btn-border-hover);
-}
+/* Screenshot / Record extend .btn .btn--icon via HTML */
 
 .app__record-btn[aria-pressed='true'] {
-  background: var(--color-btn-active-bg);
-  border-color: var(--color-btn-active-border);
   color: #f44336;
 }
 
@@ -378,34 +354,9 @@ body,
   gap: 4px;
 }
 
-.toolbar__btn {
-  width: 36px;
-  height: 36px;
-  padding: 0;
-  background: var(--color-btn-bg);
-  border: 1px solid var(--color-btn-border);
-  border-radius: 4px;
-  color: var(--color-text);
-  font-size: 16px;
-  font-family: inherit;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  transition:
-    background 120ms,
-    border-color 120ms;
-}
-
-.toolbar__btn:hover {
-  background: var(--color-btn-bg-hover);
-  border-color: var(--color-btn-border-hover);
-}
+/* .toolbar__btn extends .btn .btn--icon via HTML */
 
 .toolbar__btn--active {
-  background: var(--color-btn-active-bg);
-  border-color: var(--color-btn-active-border);
   color: var(--color-accent);
 }
 
@@ -417,25 +368,10 @@ body,
   gap: 8px;
 }
 
-.time-travel__btn {
-  height: 32px;
-  padding: 0 10px;
-  background: var(--color-btn-bg);
-  border: 1px solid var(--color-btn-border);
-  border-radius: 4px;
-  color: var(--color-text);
-  font-size: 12px;
-  font-family: inherit;
-  cursor: pointer;
-  white-space: nowrap;
-  transition:
-    background 120ms,
-    border-color 120ms;
-}
+/* .time-travel__btn extends .btn .btn--sm via HTML */
 
-.time-travel__btn:hover {
-  background: var(--color-btn-bg-hover);
-  border-color: var(--color-btn-border-hover);
+.time-travel__btn {
+  white-space: nowrap;
 }
 
 .time-travel__label {
@@ -466,29 +402,10 @@ body,
 
 /* ── Theme toggle button ──────────────────────────────────────────────────── */
 
-.theme-toggle {
-  height: 36px;
-  width: 36px;
-  padding: 0;
-  background: var(--color-btn-bg);
-  border: 1px solid var(--color-btn-border);
-  border-radius: 4px;
-  color: var(--color-text);
-  font-size: 16px;
-  font-family: inherit;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition:
-    background 120ms,
-    border-color 120ms;
-  margin-left: auto;
-}
+/* .theme-toggle extends .btn .btn--icon via HTML */
 
-.theme-toggle:hover {
-  background: var(--color-btn-bg-hover);
-  border-color: var(--color-btn-border-hover);
+.theme-toggle {
+  margin-left: auto;
 }
 
 /* ── HUD stats list ───────────────────────────────────────────────────────── */
@@ -532,29 +449,12 @@ body,
 
 /* ── Pattern library sidebar ──────────────────────────────────────────────── */
 
+/* .app__pattern-library-toggle extends .btn via HTML */
+
 .app__pattern-library-toggle {
   height: 36px;
   padding: 0 14px;
-  background: var(--color-btn-bg);
-  border: 1px solid var(--color-btn-border);
-  border-radius: 4px;
-  color: var(--color-text);
   font-size: 13px;
-  font-family: inherit;
-  cursor: pointer;
-  transition:
-    background 120ms,
-    border-color 120ms;
-}
-
-.app__pattern-library-toggle:hover {
-  background: var(--color-btn-bg-hover);
-  border-color: var(--color-btn-border-hover);
-}
-
-.app__pattern-library-toggle[aria-pressed='true'] {
-  background: var(--color-btn-active-bg);
-  border-color: var(--color-btn-active-border);
 }
 
 .pattern-library {
@@ -771,29 +671,12 @@ body,
 
 /* ── Settings panel ───────────────────────────────────────────────────────── */
 
+/* .app__settings-toggle extends .btn via HTML */
+
 .app__settings-toggle {
   height: 36px;
   padding: 0 14px;
-  background: var(--color-btn-bg);
-  border: 1px solid var(--color-btn-border);
-  border-radius: 4px;
-  color: var(--color-text);
   font-size: 13px;
-  font-family: inherit;
-  cursor: pointer;
-  transition:
-    background 120ms,
-    border-color 120ms;
-}
-
-.app__settings-toggle:hover {
-  background: var(--color-btn-bg-hover);
-  border-color: var(--color-btn-border-hover);
-}
-
-.app__settings-toggle[aria-pressed='true'] {
-  background: var(--color-btn-active-bg);
-  border-color: var(--color-btn-active-border);
 }
 
 .settings-panel {
@@ -911,25 +794,13 @@ body,
   cursor: pointer;
 }
 
+/* .settings-panel__reset extends .btn via HTML */
+
 .settings-panel__reset {
   margin-top: 6px;
   width: 100%;
   padding: 5px 10px;
-  background: var(--color-btn-bg);
-  border: 1px solid var(--color-btn-border);
-  border-radius: 4px;
-  color: var(--color-text);
   font-size: 12px;
-  font-family: inherit;
-  cursor: pointer;
-  transition:
-    background 120ms,
-    border-color 120ms;
-}
-
-.settings-panel__reset:hover {
-  background: var(--color-btn-bg-hover);
-  border-color: var(--color-btn-border-hover);
 }
 
 .settings-panel__shortcuts {

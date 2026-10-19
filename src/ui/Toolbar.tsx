@@ -67,7 +67,7 @@ export function Toolbar() {
           ref={(el) => {
             buttonRefs.current[index] = el as HTMLButtonElement | null
           }}
-          class={`toolbar__btn${activeTool === tool.id ? ' toolbar__btn--active' : ''}`}
+          class={`btn btn--icon toolbar__btn${activeTool === tool.id ? ' toolbar__btn--active' : ''}`}
           type="button"
           tabIndex={rovingIndex === index ? 0 : -1}
           onClick={() => appStore.getState().setActiveTool(tool.id)}

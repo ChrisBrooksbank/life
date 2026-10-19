@@ -11,6 +11,7 @@ import { TimeTravelControls } from './ui/TimeTravelControls'
 import { Toolbar } from './ui/Toolbar'
 import { useFileDrop } from './ui/useFileDrop'
 import { useKeyboardShortcuts } from './ui/useKeyboardShortcuts'
+import { useRenderer } from './ui/useRenderer'
 import { downloadCanvasAsPng } from './patterns/screenshot'
 import { startRecording } from './patterns/video-export'
 import type { RecordingSession } from './patterns/video-export'
@@ -28,6 +29,7 @@ export function App() {
   const isDragging = useFileDrop()
 
   useKeyboardShortcuts()
+  useRenderer()
 
   // Keep local theme and cheat sheet state in sync with store
   useEffect(() => {
@@ -103,7 +105,7 @@ export function App() {
       <footer class="app__controls" aria-label="Simulation controls">
         <TimeTravelControls />
         <button
-          class="app__pattern-library-toggle"
+          class="btn app__pattern-library-toggle"
           type="button"
           onClick={() => setLibraryOpen((o) => !o)}
           aria-pressed={libraryOpen}
@@ -114,7 +116,7 @@ export function App() {
         </button>
         <Controls />
         <button
-          class="app__screenshot-btn"
+          class="btn btn--icon app__screenshot-btn"
           type="button"
           onClick={() => {
             const canvas = document.getElementById('life-canvas') as HTMLCanvasElement | null
@@ -129,7 +131,7 @@ export function App() {
           📷
         </button>
         <button
-          class="app__record-btn"
+          class="btn btn--icon app__record-btn"
           type="button"
           onClick={() => {
             if (isRecording) {
@@ -155,7 +157,7 @@ export function App() {
         </button>
         <ThemeToggle />
         <button
-          class="app__settings-toggle"
+          class="btn app__settings-toggle"
           type="button"
           onClick={() => setSettingsOpen((o) => !o)}
           aria-pressed={settingsOpen}

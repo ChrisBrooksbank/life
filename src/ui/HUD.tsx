@@ -30,6 +30,9 @@ export function HUD() {
       const prevPop = prevPopRef.current
       const prevGen = prevGenRef.current
 
+      // Ignore unrelated store changes (theme, tool, etc.)
+      if (s.generation === prevGen && s.population === prevPop) return
+
       // Only compute births/deaths when the generation actually advances
       if (s.generation !== prevGen) {
         const delta = s.population - prevPop

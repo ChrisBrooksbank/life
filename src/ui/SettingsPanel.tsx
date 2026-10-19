@@ -182,7 +182,7 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
           </label>
 
           <button
-            class="settings-panel__reset"
+            class="btn settings-panel__reset"
             type="button"
             onClick={handleResetColors}
             aria-label="Reset colors to theme defaults"
