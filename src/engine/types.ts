@@ -1,6 +1,8 @@
 export interface Cell {
   x: number
   y: number
+  /** How many consecutive generations this cell has been alive (0 = born this step). */
+  age?: number
 }
 
 export type Coordinate = Cell
@@ -38,4 +40,6 @@ export interface EngineInterface {
   step(generations?: number): void
   /** Reset to generation 0 with no live cells */
   reset(): void
+  /** Directly set the generation counter (used when transferring state between engines) */
+  setGeneration(generation: number): void
 }
