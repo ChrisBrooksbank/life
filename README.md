@@ -2,6 +2,10 @@
 
 # Conway's Game of Life
 
+<!-- hub-link -->
+> Part of [Chris's app hub](https://chrisbrooksbank-hub.netlify.app) - a directory of all my deployed apps.
+<!-- /hub-link -->
+
 ### four rules · infinite canvas · a very long afternoon
 
 <img src="docs/demo.gif" alt="Animated demo: an R-pentomino, five cells in total, exploding into thousands over a few hundred generations" width="640" />
